@@ -1,5 +1,5 @@
-#ifndef CALC_DYNAMIC_H
-#define CALC_DYNAMIC_H
+#ifndef IND_DIAGR_H
+#define IND_DIAGR_H
 
 #include <vector>
 #include <string>

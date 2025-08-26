@@ -7,6 +7,7 @@
 #ifdef _WIN32
   #include <windows.h>
 #endif
+#include <math.h>
 
 static inline double sqr(double x){ return x*x; }
 
@@ -172,102 +173,135 @@ IndicatorResults build_indicator_PV(const Params& p,
 {
     IndicatorResults R{};
 
-    // 1) Геометрия
+    // 1) Геометрия и базовые давления
     const double D   = p.diam_cyl;
     const double S   = p.stroke;
     const double eps = p.epsilent;
+    const bool   is2T= std::round(p.tau) == 2;
 
     R.F_p = M_PI * D*D / 4.0;
     R.Vh  = S * R.F_p;
     R.Vc  = R.Vh / (eps - 1.0);
     R.Va  = R.Vh + R.Vc;
 
-    // 2) Давления
     R.Pa = p.p_a;
     R.Pr = p.p_r;
 
     const double n1 = p.n_1;
     const double n2 = p.n_2;
 
-    R.Pc  = R.Pa * std::pow(eps, n1);
+    // 2) Ключевые точки (общие для 2Т и 4Т в нашей модели)
+    R.Pc  = R.Pa * std::pow(eps, n1);     // c
     R.Vz  = R.Vc;
-    R.Pz  = R.Pc * p.lymbda_z;
-    R.Vz_ = R.Vz * p.ro;
+    R.Pz  = R.Pc * p.lymbda_z;            // z
+    R.Vz_ = R.Vz * p.ro;                  // z' (изобарное "предрасширение")
     R.Pz_ = R.Pz;
-    R.Pb  = R.Pz_ * std::pow(R.Vz_ / R.Va, n2);
+    R.Pb  = R.Pz_ * std::pow(R.Vz_ / R.Va, n2); // b
 
-    // 3) Сегменты
-    auto reserve_seg = [&](std::vector<double>& V, std::vector<double>& P, int N){
+    auto reserve = [&](std::vector<double>& V, std::vector<double>& P, int N){
         V.clear(); P.clear(); V.reserve(N); P.reserve(N);
     };
     const int N = std::max(8, samples_per_segment);
 
-    reserve_seg(R.V_comp, R.P_comp, N);
+    // --- Общие «гладкие» участки ---
+    // a -> c (сжатие)
+    reserve(R.V_comp, R.P_comp, N);
     for (int i=0;i<N;++i){
-        double t = (double)i/(N-1);
+        double t = double(i)/(N-1);
         double V = R.Va + (R.Vc - R.Va)*t;
         double P = R.Pa * std::pow(R.Va / V, n1);
         R.V_comp.push_back(V); R.P_comp.push_back(P);
     }
-
-    reserve_seg(R.V_iso_add, R.P_iso_add, 2);
+    // c -> z (изохора)
+    reserve(R.V_iso_add, R.P_iso_add, 2);
     R.V_iso_add.push_back(R.Vc); R.P_iso_add.push_back(R.Pc);
     R.V_iso_add.push_back(R.Vc); R.P_iso_add.push_back(R.Pz);
-
-    reserve_seg(R.V_preexp, R.P_preexp, 2);
+    // z -> z' (изобара при Pz)
+    reserve(R.V_preexp, R.P_preexp, 2);
     R.V_preexp.push_back(R.Vz);  R.P_preexp.push_back(R.Pz);
     R.V_preexp.push_back(R.Vz_); R.P_preexp.push_back(R.Pz);
-
-    reserve_seg(R.V_exp, R.P_exp, N);
+    // z' -> b (расширение n2)
+    reserve(R.V_exp, R.P_exp, N);
     for (int i=0;i<N;++i){
-        double t = (double)i/(N-1);
+        double t = double(i)/(N-1);
         double V = R.Vz_ + (R.Va - R.Vz_)*t;
         double P = R.Pz_ * std::pow(R.Vz_ / V, n2);
         R.V_exp.push_back(V); R.P_exp.push_back(P);
     }
 
-    reserve_seg(R.V_drop_b, R.P_drop_b, 2);
-    R.V_drop_b.push_back(R.Va); R.P_drop_b.push_back(R.Pb);
-    R.V_drop_b.push_back(R.Va); R.P_drop_b.push_back(R.Pr);
+    // --- Развилка по тактности ---
+    R.V_path.clear(); R.P_path.clear();
 
-    reserve_seg(R.V_exh, R.P_exh, 2);
-    R.V_exh.push_back(R.Va); R.P_exh.push_back(R.Pr);
-    R.V_exh.push_back(R.Vc); R.P_exh.push_back(R.Pr);
+    if (!is2T) {
+        // ===== 4-тактный (720°): как раньше =====
+        // b -> r' (вертикаль к Pr при Va)
+        reserve(R.V_drop_b, R.P_drop_b, 2);
+        R.V_drop_b.push_back(R.Va); R.P_drop_b.push_back(R.Pb);
+        R.V_drop_b.push_back(R.Va); R.P_drop_b.push_back(R.Pr);
 
-    reserve_seg(R.V_drop_r, R.P_drop_r, 2);
-    R.V_drop_r.push_back(R.Vc); R.P_drop_r.push_back(R.Pr);
-    R.V_drop_r.push_back(R.Vc); R.P_drop_r.push_back(R.Pa);
+        // r' -> r (выпуск по Pr: Va -> Vc)
+        reserve(R.V_exh, R.P_exh, 2);
+        R.V_exh.push_back(R.Va); R.P_exh.push_back(R.Pr);
+        R.V_exh.push_back(R.Vc); R.P_exh.push_back(R.Pr);
 
-    reserve_seg(R.V_int, R.P_int, 2);
-    R.V_int.push_back(R.Vc); R.P_int.push_back(R.Pa);
-    R.V_int.push_back(R.Va); R.P_int.push_back(R.Pa);
+        // r -> r'' (вертикаль к Pa при Vc)
+        reserve(R.V_drop_r, R.P_drop_r, 2);
+        R.V_drop_r.push_back(R.Vc); R.P_drop_r.push_back(R.Pr);
+        R.V_drop_r.push_back(R.Vc); R.P_drop_r.push_back(R.Pa);
 
-    // 4) Полный контур
-    auto append = [&](const std::vector<double>& V, const std::vector<double>& P){
-        R.V_path.insert(R.V_path.end(), V.begin(), P.size()?V.end():V.end());
-        R.P_path.insert(R.P_path.end(), P.begin(), P.end());
-    };
-    R.V_path.clear(); R.P_path.clear(); R.V_path.reserve(2*2 + 4*N + 8);
+        // r'' -> a (впуск по Pa: Vc -> Va)
+        reserve(R.V_int, R.P_int, 2);
+        R.V_int.push_back(R.Vc); R.P_int.push_back(R.Pa);
+        R.V_int.push_back(R.Va); R.P_int.push_back(R.Pa);
 
-    // по порядку обхода
-    R.V_path.insert(R.V_path.end(), R.V_comp.begin(),    R.V_comp.end());
-    R.P_path.insert(R.P_path.end(), R.P_comp.begin(),    R.P_comp.end());
-    R.V_path.insert(R.V_path.end(), R.V_iso_add.begin(), R.V_iso_add.end());
-    R.P_path.insert(R.P_path.end(), R.P_iso_add.begin(), R.P_iso_add.end());
-    R.V_path.insert(R.V_path.end(), R.V_preexp.begin(),  R.V_preexp.end());
-    R.P_path.insert(R.P_path.end(), R.P_preexp.begin(),  R.P_preexp.end());
-    R.V_path.insert(R.V_path.end(), R.V_exp.begin(),     R.V_exp.end());
-    R.P_path.insert(R.P_path.end(), R.P_exp.begin(),     R.P_exp.end());
-    R.V_path.insert(R.V_path.end(), R.V_drop_b.begin(),  R.V_drop_b.end());
-    R.P_path.insert(R.P_path.end(), R.P_drop_b.begin(),  R.P_drop_b.end());
-    R.V_path.insert(R.V_path.end(), R.V_exh.begin(),     R.V_exh.end());
-    R.P_path.insert(R.P_path.end(), R.P_exh.begin(),     R.P_exh.end());
-    R.V_path.insert(R.V_path.end(), R.V_drop_r.begin(),  R.V_drop_r.end());
-    R.P_path.insert(R.P_path.end(), R.P_drop_r.begin(),  R.P_drop_r.end());
-    R.V_path.insert(R.V_path.end(), R.V_int.begin(),     R.V_int.end());
-    R.P_path.insert(R.P_path.end(), R.P_int.begin(),     R.P_int.end());
+        // Собираем
+        R.V_path.insert(R.V_path.end(), R.V_comp.begin(),    R.V_comp.end());
+        R.P_path.insert(R.P_path.end(), R.P_comp.begin(),    R.P_comp.end());
+        R.V_path.insert(R.V_path.end(), R.V_iso_add.begin(), R.V_iso_add.end());
+        R.P_path.insert(R.P_path.end(), R.P_iso_add.begin(), R.P_iso_add.end());
+        R.V_path.insert(R.V_path.end(), R.V_preexp.begin(),  R.V_preexp.end());
+        R.P_path.insert(R.P_path.end(), R.P_preexp.begin(),  R.P_preexp.end());
+        R.V_path.insert(R.V_path.end(), R.V_exp.begin(),     R.V_exp.end());
+        R.P_path.insert(R.P_path.end(), R.P_exp.begin(),     R.P_exp.end());
+        R.V_path.insert(R.V_path.end(), R.V_drop_b.begin(),  R.V_drop_b.end());
+        R.P_path.insert(R.P_path.end(), R.P_drop_b.begin(),  R.P_drop_b.end());
+        R.V_path.insert(R.V_path.end(), R.V_exh.begin(),     R.V_exh.end());
+        R.P_path.insert(R.P_path.end(), R.P_exh.begin(),     R.P_exh.end());
+        R.V_path.insert(R.V_path.end(), R.V_drop_r.begin(),  R.V_drop_r.end());
+        R.P_path.insert(R.P_path.end(), R.P_drop_r.begin(),  R.P_drop_r.end());
+        R.V_path.insert(R.V_path.end(), R.V_int.begin(),     R.V_int.end());
+        R.P_path.insert(R.P_path.end(), R.P_int.begin(),     R.P_int.end());
+    } else {
+        // ===== 2-тактный (360°): упрощённая индикаторная диаграмма =====
+        // b -> r' : блоудаун (вертикаль до Pr при Va)
+        reserve(R.V_drop_b, R.P_drop_b, 2);
+        R.V_drop_b.push_back(R.Va); R.P_drop_b.push_back(R.Pb);
+        R.V_drop_b.push_back(R.Va); R.P_drop_b.push_back(R.Pr);
 
-    // 5) Работа за цикл
+        // r' -> a : подъём до Pa при Va (условно «наполнение»)
+        reserve(R.V_drop_r, R.P_drop_r, 2); // переиспользуем эти векторы
+        R.V_drop_r.push_back(R.Va); R.P_drop_r.push_back(R.Pr);
+        R.V_drop_r.push_back(R.Va); R.P_drop_r.push_back(R.Pa);
+
+        // Горизонтали впуска/выпуска по объёму здесь отсутствуют (обе при V≈Va),
+        // поэтому R.V_exh и R.V_int оставляем пустыми.
+
+        // Собираем
+        R.V_path.insert(R.V_path.end(), R.V_comp.begin(),    R.V_comp.end());
+        R.P_path.insert(R.P_path.end(), R.P_comp.begin(),    R.P_comp.end());
+        R.V_path.insert(R.V_path.end(), R.V_iso_add.begin(), R.V_iso_add.end());
+        R.P_path.insert(R.P_path.end(), R.P_iso_add.begin(), R.P_iso_add.end());
+        R.V_path.insert(R.V_path.end(), R.V_preexp.begin(),  R.V_preexp.end());
+        R.P_path.insert(R.P_path.end(), R.P_preexp.begin(),  R.P_preexp.end());
+        R.V_path.insert(R.V_path.end(), R.V_exp.begin(),     R.V_exp.end());
+        R.P_path.insert(R.P_path.end(), R.P_exp.begin(),     R.P_exp.end());
+        R.V_path.insert(R.V_path.end(), R.V_drop_b.begin(),  R.V_drop_b.end());
+        R.P_path.insert(R.P_path.end(), R.P_drop_b.begin(),  R.P_drop_b.end());
+        R.V_path.insert(R.V_path.end(), R.V_drop_r.begin(),  R.V_drop_r.end());
+        R.P_path.insert(R.P_path.end(), R.P_drop_r.begin(),  R.P_drop_r.end());
+    }
+
+    // 3) Работа за цикл
     R.A_cycle = 0.0;
     for (size_t i=1;i<R.V_path.size();++i){
         double dV   = R.V_path[i] - R.V_path[i-1];
@@ -275,10 +309,9 @@ IndicatorResults build_indicator_PV(const Params& p,
         R.A_cycle  += Pavg * dV;
     }
 
-    // 6) Теплоподвод и КПД
+    // 4) Теплоподвод и КПД
     R.Q_in = (R.Pz - R.Pc)*R.Vc + R.Pz*(R.Vz_ - R.Vz);
     R.eta  = (R.Q_in != 0.0 ? R.A_cycle / R.Q_in : 0.0);
-
     // 7) CSV (если нужно)
     if (!output_csv_path.empty()){
         std::ofstream fcsv(output_csv_path);

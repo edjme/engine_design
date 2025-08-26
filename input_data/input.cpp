@@ -1,43 +1,102 @@
 #include <iostream>
+#include <fstream>
+#include <sstream>
+#include <map>
+#include "input.h"
 using namespace std;
 
-int input() {
-    // Исходные данные для программы
-    const double pi = 3.14159265358979323846; // число ПИ
-    const double deg = pi/180;  // градусы
-    double diam_cyl = 0.11; //  диаметр цилиндра в м.
-    double stroke = 0.12; //    ход поршня в м.
-    double epsilent = 12; //	Степень сжатия 
-    double p_a = 0.09e6; // 	Давление впуска в Па
-    double p_r = 0.11e6;    // 	Давление на выпуске в Па
-    double n_1 = 1.38;  //  	Показатель политропы сжатия 
-    double n_2 = 1.22;  //      Показатель политропы расширения 
-    double lymbda_z = 2;    //  Степень повышения давления 
-    double ro = 1.35;   //      Степень предварительного расширения
-    double lyambda = 1/3;   //  Геометрическая характеристика КШМ
-    double n = 3900;    //      Частота вращения коленчатого вала в об/мин
-    double m_pd = 110;      //  Масса поступ движ частей КШМ, отнесенная к площади поршня в кг/м^2
-    double r = 0.06;        //  Длина кривошипа в м
-    double leng_rod = 0.18;   //Длина шатуна в м
-    double m_rod = m_pd;        //Масса шатуна, отнесенная в площади поршня в кг/м^2
-    double m_2 = (2/3) * m_rod;     //Масса шатуна, приведенная к оси шатунной шейки и отнесенная к площади поршня в кг/м^2
-    double w = 2 * pi * n / 60;     //Скорость вращения коленчатого вала в рад/с
-    double tau = 4;     //          Тактность
-    double count_cyl = 2;           //Количество цилиндров 
-    double gamma = 180 * deg;       //Угол развала в град
-    double diam_root_neck = 0.727 * diam_cyl;       //Диаметр корен шейки в м
-    double diam_rod_neck = 0.65 * diam_cyl;         //Диаметр шатунной шейки в м
-    double length_rod_neck = 0.51 * diam_rod_neck;      //Длина шатунной шейки в м
-    double length_root_neck = 0.66 * diam_root_neck;        //Длина коренной шейки в м
-    double depth_web = 0.4 * diam_cyl;      //Толщина щеки в м
-    double fillet_rad = 0.08 * depth_web;               //Радиус скругления галтели в м
-    double width_web = diam_root_neck + 2 * fillet_rad;                     //Ширина щеки в м
-    double dist_axes = length_rod_neck + 2 * depth_web + length_root_neck;      //Расстояние между осями цилиндров в м 
-    double dist_web = 2 * length_rod_neck + 3 * depth_web + length_root_neck;       //Расстояние между щеками в м 
+static const string CSV_PATH = "input.csv";
 
+// Создаёт файл с дефолтными значениями, если он отсутствует
+void createDefaultCSV() {
+    ofstream out(CSV_PATH);
+    out << "param,value\n";
+    out << "diam_cyl,0.11\n";
+    out << "stroke,0.12\n";
+    out << "epsilent,12\n";
+    out << "p_a,90000\n";
+    out << "p_r,110000\n";
+    out << "n_1,1.38\n";
+    out << "n_2,1.22\n";
+    out << "lymbda_z,2\n";
+    out << "ro,1.35\n";
+    out << "lyambda,0.3333333\n";
+    out << "n,3900\n";
+    out << "m_pd,110\n";
+    out << "r,0.06\n";
+    out << "leng_rod,0.18\n";
+    out << "m_rod,2600\n";
+    out << "m_2,1733.33\n";
+    out << "w,408.407\n";
+    out << "tau,4\n";
+    out << "count_cyl,2\n";
+    out << "gamma,3.1415926535\n";
+    out << "diam_root_neck,0.07997\n";
+    out << "diam_rod_neck,0.0715\n";
+    out << "length_rod_neck,0.036465\n";
+    out << "length_root_neck,0.05278\n";
+    out << "depth_web,0.044\n";
+    out << "fillet_rad,0.00352\n";
+    out << "width_web,0.08701\n";
+    out << "dist_axes,0.17725\n";
+    out << "dist_web,0.26525\n";
+    out << "rho_material,7850\n";
+    out.close();
+    cout << "Создан файл " << CSV_PATH << " с дефолтными значениями.\n";
+}
 
+Params input() {
+    ifstream file(CSV_PATH);
+    if (!file.is_open()) {
+        cerr << "⚠ CSV-файл не найден. Создаю новый с дефолтными значениями...\n";
+        createDefaultCSV();
+        file.open(CSV_PATH);
+    }
 
-    cout<<"Depth web = "<<depth_web;
-    
-    return 0;
+    map<string, double> values;
+    string line;
+    getline(file, line); // пропускаем заголовок
+
+    while (getline(file, line)) {
+        string key, valStr;
+        stringstream ss(line);
+        if (!getline(ss, key, ',')) continue;
+        if (!getline(ss, valStr, ',')) continue;
+        values[key] = stod(valStr);
+    }
+    file.close();
+
+    Params p;
+    p.diam_cyl         = values["diam_cyl"];
+    p.stroke           = values["stroke"];
+    p.epsilent         = values["epsilent"];
+    p.p_a              = values["p_a"];
+    p.p_r              = values["p_r"];
+    p.n_1              = values["n_1"];
+    p.n_2              = values["n_2"];
+    p.lymbda_z         = values["lymbda_z"];
+    p.ro               = values["ro"];
+    p.lyambda          = values["lyambda"];
+    p.n                = values["n"];
+    p.m_pd             = values["m_pd"];
+    p.r                = values["r"];
+    p.leng_rod         = values["leng_rod"];
+    p.m_rod            = values["m_rod"];
+    p.m_2              = values["m_2"];
+    p.w                = values["w"];
+    p.tau              = values["tau"];
+    p.count_cyl        = values["count_cyl"];
+    p.gamma            = values["gamma"];
+    p.diam_root_neck   = values["diam_root_neck"];
+    p.diam_rod_neck    = values["diam_rod_neck"];
+    p.length_rod_neck  = values["length_rod_neck"];
+    p.length_root_neck = values["length_root_neck"];
+    p.depth_web        = values["depth_web"];
+    p.fillet_rad       = values["fillet_rad"];
+    p.width_web        = values["width_web"];
+    p.dist_axes        = values["dist_axes"];
+    p.dist_web         = values["dist_web"];
+    p.rho_material     = values["rho_material"];
+
+    return p;
 }
