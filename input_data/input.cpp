@@ -5,7 +5,7 @@
 #include "input.h"
 using namespace std;
 
-static const string CSV_PATH = "input.csv";
+static const string CSV_PATH = "input_data/input.csv";
 
 // Создаёт файл с дефолтными значениями, если он отсутствует
 void createDefaultCSV() {
@@ -25,12 +25,12 @@ void createDefaultCSV() {
     out << "m_pd,110\n";
     out << "r,0.06\n";
     out << "leng_rod,0.18\n";
-    out << "m_rod,2600\n";
-    out << "m_2,1733.33\n";
+    out << "m_rod,110\n";
+    out << "m_2,73.33\n";
     out << "w,408.407\n";
     out << "tau,4\n";
     out << "count_cyl,2\n";
-    out << "gamma,3.1415926535\n";
+    out << "gamma,0\n";
     out << "diam_root_neck,0.07997\n";
     out << "diam_rod_neck,0.0715\n";
     out << "length_rod_neck,0.036465\n";
