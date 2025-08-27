@@ -21,6 +21,7 @@
                 "Calculations/diag_palpha.cpp",
                 "Calculations/forces_ksm.cpp",
                 "Calculations/vds_crankpin.cpp",
+                "Calculations/cw_counterweights.cpp"
             ],
             "group": {
                 "kind": "build",

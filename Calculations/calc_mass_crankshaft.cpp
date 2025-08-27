@@ -10,50 +10,92 @@
 //==================== МАССА / ЦЕНТР ТЯЖЕСТИ (метры, килограммы) ====================
 CrankshaftMassResults calc_mass_crankshaft(const Params& p)
 {
-    const double rho     = p.rho_material;    // кг/м^3
-    const double axis_dx = p.r;               // м — расстояние между осями шеек в плоскости щеки = радиус кривошипа
+    const double rho     = p.rho_material;        // кг/м^3
+    const double R       = p.r;                   // м — расстояние между осями шеек (по X)
+    const double y_half  = 0.5 * p.width_web;     // м — половина ширины щеки по Y
+    const double Wz      = p.depth_web;           // м — толщина щеки по Z
+    const double Rm      = 0.5 * p.diam_root_neck;
+    const double Rr      = 0.5 * p.diam_rod_neck;
 
-    // Коренная шейка (цилиндр)
-    const double vol_root = M_PI * std::pow(0.5 * p.diam_root_neck, 2) * p.length_root_neck;
+    // Коренная
+    const double vol_root = M_PI * Rm*Rm * p.length_root_neck;
     const double m_root   = rho * vol_root;
     const double x_root   = 0.0;
 
-    // Шатунная шейка (цилиндр)
-    const double vol_rod  = M_PI * std::pow(0.5 * p.diam_rod_neck,  2) * p.length_rod_neck;
+    // Шатунная
+    const double vol_rod  = M_PI * Rr*Rr * p.length_rod_neck;
     const double m_rod    = rho * vol_rod;
-    const double x_rod    = axis_dx;          // центр шатунной по X на расстоянии R
+    const double x_rod    = R;
 
-    // Щека (1 шт) как «стадион» в плоскости X–Y: длина по X = axis_dx, ширина по Y = width_web.
-    // Экструзия по Z на толщину = depth_web.
-    const double y_half       = 0.5 * p.width_web;
-    const double A_stad       = axis_dx * (2.0*y_half) + M_PI * y_half * y_half;
-    const double vol_web_1    = A_stad * p.depth_web;
+    // Общие полезные величины
+    const double A_rect    = R * (2.0 * y_half);             // прямоугольник 0..R
+    const double A_fullCir = M_PI * y_half * y_half;         // полный круг
+    const double A_semi    = 0.5 * A_fullCir;                // полукруг
+    const double V_fillet  = M_PI * p.fillet_rad * p.fillet_rad * Wz; // «галтель» (одна)
 
-    // Вырезы под галтели (по массе учитываем вычитание двух цилиндров радиуса fillet_rad через толщину depth_web)
-    const double vol_fillet   = M_PI * p.fillet_rad * p.fillet_rad * p.depth_web;
-    const double vol_web_net1 = vol_web_1 - 2.0 * vol_fillet;
-    const double m_web_1      = rho * vol_web_net1;
-    const double m_web_total  = 2.0 * m_web_1;
-    const double x_web        = axis_dx * 0.5;              // ЦТ щек по X посередине между осями шеек
+    double total_mass = 0.0;
+    double x_cg = 0.0;
 
-    const double total_mass   = m_root + m_rod + m_web_total;
+    if (std::lround(p.config_crankshaft) == 2) {
+        // ─────────────────── НЕПОЛНООПОРНЫЙ ───────────────────
+        // Левая щека — полная (стадион): прямоугольник + два полукруга
+        const double A_web_L = A_rect + A_fullCir;                 // «стадион»
+        const double V_web_L = A_web_L * Wz - 2.0 * V_fillet;      // два выреза под галтели
+        const double m_web_L = rho * V_web_L;
+        const double x_web_L = R * 0.5;                            // симметрия
 
-    const double x_cg = (m_root * x_root + m_rod * x_rod + m_web_total * x_web) / total_mass;
+        // Правая щека — ПОЛУЩЕКА: прямоугольник [0..R] + ПРАВЫЙ полукруг (центр в x=R),
+        // плоская грань по оси коренной шейки x=0.
+        const double A_web_R = A_rect + A_semi;
+        const double V_web_R = A_web_R * Wz - 2.0 * V_fillet;      // у неё тоже 2 галтели (к коренной и к шатунной)
+        const double m_web_R = rho * V_web_R;
 
-    // Приведённая к оси коренной шейки масса (твоя формула)
+        // Центр тяжести правой полущёки: смесь прямоугольника и полукруга
+        const double x_rect    = R * 0.5;
+        const double x_semi_R  = R + 4.0 * y_half / (3.0 * M_PI);  // центроид полукруга вправо от центра
+        const double x_web_R   = (A_rect * x_rect + A_semi * x_semi_R) / (A_web_R);
+
+        total_mass = m_root + m_rod + m_web_L + m_web_R;
+        x_cg = (m_root*x_root + m_rod*x_rod + m_web_L*x_web_L + m_web_R*x_web_R) / total_mass;
+    } else {
+        // ─────────────────── ПОЛНООПОРНЫЙ ───────────────────
+        const double A_web    = A_rect + A_fullCir;               // «стадион»
+        const double V_web    = A_web * Wz - 2.0 * V_fillet;
+        const double m_web_1  = rho * V_web;
+        const double m_web_2  = rho * V_web;
+        const double m_web_tot= m_web_1 + m_web_2;
+        const double x_web    = R * 0.5;
+
+        total_mass = m_root + m_rod + m_web_tot;
+        x_cg = (m_root*x_root + m_rod*x_rod + m_web_tot*x_web) / total_mass;
+    }
+    
+     //вспомогательные расстояния (для контроля компоновки)
+    const double axis_p = p.length_root_neck + 2.0*p.depth_web + p.length_rod_neck;
+    const double web_p  = p.length_root_neck + 3.0*p.depth_web + 2.0*p.length_rod_neck;
+    const double axis_n = p.length_rod_neck  + p.depth_web;
+    const double web_n  = 2.0*p.depth_web    + 2.0*p.length_rod_neck;
+
+    std::cout
+        << "\n=== Контрольные расстояния ===\n"
+        << "Полноопорный:  axis_p = " << axis_p << " м,  web_p = " << web_p << " м\n"
+        << "Неполноопорный:axis_n = " << axis_n << " м,  web_n = " << web_n << " м\n";
+
+
+    // Приведённая масса к оси коренной
     const double m_root_reduce = total_mass * (x_cg * 4.0) / (p.r * M_PI * std::pow(p.diam_cyl, 2));
     const double m_rotating    = m_root_reduce + p.m_2;
 
-    std::cout << "\n Масса колена вала: " << total_mass << " кг.\n";
-    std::cout << "\n Расстояние от оси коренной шейки до ЦТ: " << x_cg << " м.\n";
-    std::cout << "\n Приведенная масса коренной шейки : " << m_root_reduce << " кг/м^2\n";
-    std::cout << "\n Масса вращающихся частей : " << m_rotating << " кг/м^2\n";
+    std::cout << "\nКонфигурация: " << (std::lround(p.config_crankshaft)==2 ? "неполноопорный" : "полноопорный") << "\n";
+    std::cout << "Масса колена: " << total_mass << " кг\n";
+    std::cout << "x_CG (от оси коренной): " << x_cg << " м\n";
+    std::cout << "Приведённая масса коренной: " << m_root_reduce << " кг/м^2\n";
+    std::cout << "Масса вращающихся частей: " << m_rotating << " кг/м^2\n";
 
-    return { total_mass, x_cg, m_root_reduce, m_rotating };
+    return { total_mass, x_cg, m_root_reduce, m_rotating, axis_p, web_p, axis_n, web_n };
 }
 
 //==================== ПРОСТОЙ ГЕНЕРАТОР STL (в миллиметрах) ====================
-
 struct V3 { double x,y,z; };
 
 static void tri(std::ofstream& f, const V3& n, const V3& a, const V3& b, const V3& c)
@@ -73,10 +115,8 @@ static V3 nXn(){ return {-1,0,0}; }
 static V3 nYp(){ return {0,1,0};  }
 static V3 nYn(){ return {0,-1,0}; }
 
-// Вспом. масштабирование «метры → миллиметры»
 static inline double mm(double meters){ return meters * 1000.0; }
 
-// Цилиндр вдоль Z (для шеек). Все аргументы — **в метрах**, внутри масштабируем в мм.
 static void add_cyl_Z_mm(std::ofstream& f, double R_m, double h_m,
                          double cx_m, double cy_m, double z0_m, int seg)
 {
@@ -100,7 +140,6 @@ static void add_cyl_Z_mm(std::ofstream& f, double R_m, double h_m,
     }
 }
 
-// Прямоугольный блок. Аргументы в метрах.
 static void add_block_mm(std::ofstream& f,
                          double x0_m,double x1_m, double y0_m,double y1_m, double z0_m,double z1_m)
 {
@@ -116,57 +155,63 @@ static void add_block_mm(std::ofstream& f,
     tri(f, nYp(), D,K,H); tri(f, nYp(), D,H,C);
 }
 
-// «Стадион» (прямоугольник + два полукруга по Y) с экструзией по Z. Аргументы в метрах.
 static void add_stadium_extrude_Z_mm(std::ofstream& f,
                                      double x0_m, double x1_m, double y_half_m,
                                      double z0_m, double z1_m, int seg)
 {
-    // прямой участок
     add_block_mm(f, x0_m, x1_m, -y_half_m, +y_half_m, z0_m, z1_m);
-    // полукруги по концам
     add_cyl_Z_mm(f, y_half_m, (z1_m - z0_m), x0_m, 0.0, z0_m, seg);
     add_cyl_Z_mm(f, y_half_m, (z1_m - z0_m), x1_m, 0.0, z0_m, seg);
 }
 
-// Экспорт STL в мм
+// ── Экспорт STL в мм ──
 bool export_crank_STL_mm(const Params& p, const std::string& stl_path, int seg)
 {
+    const bool nonfull = (std::lround(p.config_crankshaft) == 2);
+
     // Геометрия (метры)
-    const double axis_dx = p.r;                // длина щеки по X (межосевое в плоскости щёк)
-    const double Rm      = 0.5 * p.diam_root_neck;
-    const double Rr      = 0.5 * p.diam_rod_neck;
+    const double R      = p.r;
+    const double Rm     = 0.5 * p.diam_root_neck;
+    const double Rr     = 0.5 * p.diam_rod_neck;
+    const double Lm     = p.length_root_neck;
+    const double Lr     = p.length_rod_neck;
+    const double Wz     = p.depth_web;
+    const double y_half = 0.5 * p.width_web;
 
-    // Компоновка по Z (полноопорный): mainL | webL | rod | webR | mainR
-    const double Lm = p.length_root_neck;
-    const double Lr = p.length_rod_neck;
-    const double Wz = p.depth_web;             // толщина щеки по Z (экструзия)
-    const double y_half = 0.5 * p.width_web;   // половина ширины щеки по Y
-
-    const double z_rod0  = -0.5 * Lr;
-    const double z_rod1  = +0.5 * Lr;
-    const double z_webL0 = z_rod0 - Wz;
-    const double z_webL1 = z_rod0;
-    const double z_webR0 = z_rod1;
-    const double z_webR1 = z_rod1 + Wz;
-    const double z_mainL0= z_webL0 - Lm;
-    const double z_mainR0= z_webR1;
+    // Компоновка по Z
+    const double z_rod0   = -0.5 * Lr;
+    const double z_rod1   =  0.5 * Lr;
+    const double z_webL0  = z_rod0 - Wz;
+    const double z_webL1  = z_rod0;
+    const double z_webR0  = z_rod1;
+    const double z_webR1  = z_rod1 + Wz;
+    const double z_mainL0 = z_webL0 - Lm;
 
     std::ofstream f(stl_path);
     if(!f) return false;
 
-    f << "solid crank_fullsupport_mm\n";
+    f << "solid crank_mm\n";
 
-    // коренные (ось X=0, Y=0)
+    // коренная слева
     add_cyl_Z_mm(f, Rm, Lm, 0.0, 0.0, z_mainL0, seg);
-    add_cyl_Z_mm(f, Rm, Lm, 0.0, 0.0, z_mainR0, seg);
 
-    // шатунная (ось X=R)
-    add_cyl_Z_mm(f, Rr, Lr, axis_dx, 0.0, z_rod0, seg);
+    // левая полная щека (стадион)
+    add_stadium_extrude_Z_mm(f, 0.0, R, y_half, z_webL0, z_webL1, seg);
 
-    // щеки как «стадион» (ширина по Y = width_web, экструзия по Z = depth_web)
-    add_stadium_extrude_Z_mm(f, 0.0, axis_dx, y_half, z_webL0, z_webL1, seg);
-    add_stadium_extrude_Z_mm(f, 0.0, axis_dx, y_half, z_webR0, z_webR1, seg);
+    // шатунная
+    add_cyl_Z_mm(f, Rr, Lr, R, 0.0, z_rod0, seg);
 
-    f << "endsolid crank_fullsupport_mm\n";
+    if (nonfull) {
+        // правая ПОЛУЩЕКА: прямоугольник 0..R + правый полукруг (плоскость по оси коренной x=0)
+        add_block_mm(f, 0.0, R, -y_half, +y_half, z_webR0, z_webR1);
+        add_cyl_Z_mm(f, y_half, (z_webR1 - z_webR0), R, 0.0, z_webR0, seg);
+        // (в неполноопорном второй коренной шейки нет)
+    } else {
+        // полноопорный: правая полная щека и правая коренная
+        add_stadium_extrude_Z_mm(f, 0.0, R, y_half, z_webR0, z_webR1, seg);
+        add_cyl_Z_mm(f, Rm, Lm, 0.0, 0.0, z_webR1, seg);
+    }
+
+    f << "endsolid crank_mm\n";
     return true;
 }

@@ -32,6 +32,11 @@ struct Params {
     double dist_axes;
     double dist_web;
     double rho_material;
+    double config_crankshaft;
+    double config_prot;
+    double depth_prot;
+    double r_prot1;
+    double r_prot2;
 };
 
 Params input();

@@ -11,36 +11,41 @@ static const string CSV_PATH = "input_data/input.csv";
 void createDefaultCSV() {
     ofstream out(CSV_PATH);
     out << "param,value\n";
-    out << "diam_cyl,0.11\n";
-    out << "stroke,0.12\n";
-    out << "epsilent,12\n";
-    out << "p_a,90000\n";
-    out << "p_r,110000\n";
-    out << "n_1,1.38\n";
-    out << "n_2,1.22\n";
-    out << "lymbda_z,2\n";
-    out << "ro,1.35\n";
-    out << "lyambda,0.3333333\n";
-    out << "n,3900\n";
-    out << "m_pd,110\n";
-    out << "r,0.06\n";
-    out << "leng_rod,0.18\n";
-    out << "m_rod,110\n";
-    out << "m_2,73.33\n";
-    out << "w,408.407\n";
-    out << "tau,4\n";
-    out << "count_cyl,2\n";
-    out << "gamma,0\n";
-    out << "diam_root_neck,0.07997\n";
-    out << "diam_rod_neck,0.0715\n";
-    out << "length_rod_neck,0.036465\n";
-    out << "length_root_neck,0.05278\n";
-    out << "depth_web,0.044\n";
-    out << "fillet_rad,0.00352\n";
-    out << "width_web,0.08701\n";
-    out << "dist_axes,0.17725\n";
-    out << "dist_web,0.26525\n";
-    out << "rho_material,7850\n";
+    out << "diam_cyl,0.11\n";                   //диаметр цилиндра в м.
+    out << "stroke,0.12\n";                     //ход поршня в м.
+    out << "epsilent,12\n";                     //степень сжатия
+    out << "p_a,90000\n";                       //давление на впуске в Па
+    out << "p_r,110000\n";                      //давление на выпуске в Па
+    out << "n_1,1.38\n";                        //показатель политропы сжатия
+    out << "n_2,1.22\n";                        //показатель политропы расширения
+    out << "lymbda_z,2\n";                      //степень повышения давления
+    out << "ro,1.35\n";                         //степень предварительного расширения
+    out << "lyambda,0.3333333\n";               //геометрическая характеристика КШМ
+    out << "n,3900\n";                          //частота вращения коленчатого вала в об/мин
+    out << "m_pd,110\n";                        //Масса поступ движ частей КШМ, отнесенная к площади поршня в кг/м^2
+    out << "r,0.06\n";                          //длина кривошипа в м.
+    out << "leng_rod,0.18\n";                   //длина шатуна в м.
+    out << "m_rod,110\n";                       //Масса шатуна, отнесенная в площади поршня в кг/м^2
+    out << "m_2,73.33\n";                       //Масса шатуна, приведенная к оси шатунной шейки и отнесенная к площади поршня в кг/м^2
+    out << "w,408.407\n";                       //Скорость вращения коленчатого вала в рад/с
+    out << "tau,4\n";                           //тактность
+    out << "count_cyl,2\n";                     //количество цилиндров
+    out << "gamma,0\n";                         //угол развала
+    out << "diam_root_neck,0.07997\n";          //Диаметр коренной шейки в м.
+    out << "diam_rod_neck,0.0715\n";            //Диаметр шатунной шейки в м.
+    out << "length_rod_neck,0.036465\n";        //Длина шатунной шейки в м.
+    out << "length_root_neck,0.05278\n";        //Длина коренной шейки в м.
+    out << "depth_web,0.044\n";                 //Глубина щеки в м.
+    out << "fillet_rad,0.00352\n";              //Радиус галтели в м.
+    out << "width_web,0.08701\n";               //Ширина щеки в м.
+    out << "dist_axes,0.17725\n";               //Межосевое расстояние в м.
+    out << "dist_web,0.26525\n";                //Расстояние между щеками 
+    out << "rho_material,7850\n";               //Плотность материала в кг/м^3
+    out << "config_crankshaft,1\n";             //Конфигурация колена вала (1-полноопорный , 2-неполноопорный)
+    out << "config_prot,1\n";                   //Выбор противовесов (1-1й вариант полноопорный, 2-2й вариант вариант полноопорный , 3-неполноопорный)
+    out << "r_prot1,0.043505\n";                       //Внутренний радиус противовеса в м. (обычно радиус коренной плюс радиус галтели)
+    out << "r_prot2,0.103505\n";                       //Внешний радиус противовеса в м.   (обычно радиус внутренний плюс кривошип)
+    out << "depth_prot,0.044\n";                //Глубина противовеса в м.
     out.close();
     cout << "Создан файл " << CSV_PATH << " с дефолтными значениями.\n";
 }
@@ -97,6 +102,11 @@ Params input() {
     p.dist_axes        = values["dist_axes"];
     p.dist_web         = values["dist_web"];
     p.rho_material     = values["rho_material"];
+    p.config_crankshaft= values["config_crankshaft"];
+    p.config_prot      = values["config_prot"];
+    p.depth_prot       = values["depth_prot"];
+    p.r_prot1          = values["r_prot1"];
+    p.r_prot2          = values["r_prot2"];
 
     return p;
 }
