@@ -17,7 +17,6 @@ int main() {
     // чтобы русские сообщения были читабельны в терминале
     system("chcp 65001 > nul");
     #endif
-
     // 0) ввод параметров
     Params p = input();
 
@@ -75,21 +74,21 @@ int main() {
 
     // 6) противовесы
     CWVariant var = CWVariant::FullSupport_V1;
-const long vsel = (long)std::llround(p.config_prot); // берём из CSV
-if      (vsel == 2) var = CWVariant::FullSupport_V2;
-else if (vsel == 3) var = CWVariant::SemiSupport;
+    const long vsel = (long)std::llround(p.config_prot); // берём из CSV
+    if      (vsel == 2) var = CWVariant::FullSupport_V2;
+    else if (vsel == 3) var = CWVariant::SemiSupport;
 
-// 3) строим и сохраняем общий STL (миллиметры)
-auto cw = build_counterweights_and_export(
+    // 3) строим и сохраняем общий STL (миллиметры)
+    auto cw = build_counterweights_and_export(
     p, cm, var,
     "output/crank_with_cw_mm.stl",
-    128,
-    /*clamp_alpha_on_limit=*/true
-);
+    128,true);
+    std::cout << "Статический момент противовеса = " << cw.S_prot << " кг*м\n";
+    std::cout << "Угол сектора противовеса = " << cw.alpha_deg << " град.\n";
 
-if (!cw.ok){
+    if (!cw.ok){
     std::cerr << "[CW] Предупреждение/ошибка: " << cw.message << "\n";
-}
+    }
 
     std::cout << "\nГотово.\n";
     return 0;
