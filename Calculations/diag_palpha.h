@@ -4,23 +4,23 @@
 #include <vector>
 #include <string>
 #include "input_data/input.h"
-#include "Calculations/ind_diagr.h" // тут объявлен IndicatorResults
+#include "Calculations/ind_diagr.h"   // IndicatorResults
 
 struct PAlphaResults {
     // Сетка
-    std::vector<double> alpha_deg; // 0..720, град
-    std::vector<double> V_alpha;   // м^3
-    std::vector<double> P_alpha;   // Па
+    std::vector<double> alpha_deg;   // 0..360/720, град
+    std::vector<double> V_alpha;     // м^3
+    std::vector<double> P_alpha;     // Па
 
     // Найденный угол изобарного участка (добавление теплоты)
-    double phi_deg;  // град
+    double phi_deg = 0.0;            // град
 
     // Диагностика
     std::string summary;
 };
 
 // Построение P(α) с шагом step_deg (например, 0.5 или 1.0 град).
-// Если заданы пути — сохранит CSV и HTML-график; auto_open_html=true — откроет HTML (Windows).
+// Если заданы пути — сохраняет CSV и HTML-график; auto_open_html=true — откроет HTML (Windows).
 PAlphaResults build_P_alpha(const Params& p,
                             const IndicatorResults& ind,
                             double step_deg = 0.5,

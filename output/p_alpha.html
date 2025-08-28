@@ -15,7 +15,7 @@
 </head><body>
 <div class="card">
   <h1>P(α) — развёртка индикаторной диаграммы</h1>
-  <div class="meta">Давление — в МПа, угол α — в градусах (0…720). Вертикальные линии: 0, 180, 360, 540, 720 и α=360+φ.</div>
+  <div class="meta">Давление — МПа, угол α — градусы (0…720). Вертикальные линии: 0, 180, 360, 540, 720 и α=360+φ.</div>
   <canvas id="palpha" width="1050" height="520"></canvas>
   <div class="row" style="margin-top:12px">
     <div class="box"><h3>Опорные давления</h3>
@@ -71,7 +71,7 @@ for (let i=0;i<=6;i++){ let a=Amin+(Amax-Amin)*i/6; let x=xMap(a); ctx.fillText(
 ctx.textAlign='right';
 for (let j=0;j<=5;j++){ let p=Pmin+(Pmax-Pmin)*j/5; let y=yMap(p); ctx.fillText(p.toFixed(2), padL-6, y+4); }
 
-// вертикальные ориентиры: 0,180,360,540,720, 360+φ
+// вертикальные ориентиры: 0,180,360,540,720, и 360+φ
 const marks=[0,180,360,540,720, 360+phiDeg];
 ctx.strokeStyle='#475569'; ctx.setLineDash([4,4]); ctx.beginPath();
 for (let m of marks){ if(m < Amin || m > Amax) continue; let x=xMap(m);
@@ -87,13 +87,12 @@ for (let i=0;i<A.length;i++){
 }
 ctx.stroke();
 
-// надписи к вертикалям (сверху)
+// подписи к вертикалям
 ctx.fillStyle='#94a3b8'; ctx.textAlign='center';
-function label(x,txt){ ctx.fillText(txt, x, padT+12); }
 for (let m of [0,180,360,540,720]){
-  if(m < Amin || m > Amax) continue; label(xMap(m), m.toFixed(0));
+  if(m < Amin || m > Amax) continue;
+  ctx.fillText(String(m), xMap(m), padT+12);
 }
-if (360+phiDeg >= Amin && 360+phiDeg <= Amax) label(xMap(360+phiDeg), '360+φ');
-
+if (360+phiDeg >= Amin && 360+phiDeg <= Amax) ctx.fillText('360+φ', xMap(360+phiDeg), padT+12);
 </script>
 </body></html>

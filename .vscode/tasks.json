@@ -15,7 +15,7 @@
                 "-fexec-charset=UTF-8",
                 "-I.",
                 "-Iinput_data",
-                "-Icalculations",
+                "-ICalculations",
                 "-g",
                 "Calculations/ind_diagr.cpp",
                 "Calculations/diag_palpha.cpp",
@@ -27,7 +27,9 @@
                 "kind": "build",
                 "isDefault": true
             },
-            "problemMatcher": ["$gcc"],
+            "problemMatcher": [
+                "$gcc"
+            ],
             "detail": "Компиляция всех cpp файлов в main.exe"
         }
     ]

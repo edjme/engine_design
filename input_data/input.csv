@@ -29,7 +29,7 @@ width_web,0.08701
 dist_axes,0.17725
 dist_web,0.26525
 rho_material,7850
-config_crankshaft,1
+config_crankshaft,2
 config_prot,3
 r_prot1,0.043505
 r_prot2,0.103505

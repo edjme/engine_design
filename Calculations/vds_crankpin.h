@@ -3,22 +3,26 @@
 
 #include <vector>
 #include <string>
-#include "input_data/input.h"          // Params
-#include "Calculations/forces_ksm.h"   // ForcesResults: alpha_deg, T, Z
+#include "input_data/input.h"
+#include "Calculations/forces_ksm.h"
 
+// Результаты построения ВДС шатунной шейки.
+// Координаты диаграммы: X = Z + P′c (Н), Y = T (Н).
 struct VDSCrankpinResults {
-    std::vector<double> alpha_deg;  // сетка угла, град
-    std::vector<double> Z_shifted;  // Z + P'c, Н
-    std::vector<double> T_same;     // T, Н
-    double Pc_prime = 0.0;          // Н (смещение по Z)
-    double m2_eff   = 0.0;          // кг (m2 * Fp)
+    std::vector<double> alpha_deg;  // град
+    std::vector<double> Z_shifted;  // Н  (Z + P′c)
+    std::vector<double> T_same;     // Н  (T)
+    double m2_eff = 0.0;            // кг, m₂ (уд.) * Fp
+    double Pc_prime = 0.0;          // Н, m2_eff * r * ω²
     std::string summary;
 };
 
+// Построение ВДС шатунной шейки.
+// out_csv/out_html можно не указывать, чтобы не сохранять файлы.
 VDSCrankpinResults build_vds_crankpin(const Params& p,
                                       const ForcesResults& fr,
-                                      const std::string& out_csv  = {},
+                                      const std::string& out_csv = {},
                                       const std::string& out_html = {},
                                       bool auto_open_html = true);
 
-#endif
+#endif // VDS_CRANKPIN_H

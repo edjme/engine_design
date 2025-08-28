@@ -4,36 +4,41 @@
 #include <sstream>
 #include <algorithm>
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
-
 #ifdef _WIN32
   #include <windows.h>
 #endif
 
-static inline void pad_range(double& lo,double& hi){
-    double d = hi-lo; if(d<=0) d = 1.0;
-    lo -= 0.05*d; hi += 0.05*d;
+namespace {
+constexpr double PI = 3.1415926535897932384626433832795;
+
+inline void pad_range(double& lo,double& hi){
+    double d = hi - lo;
+    if (d <= 0.0) d = (std::fabs(hi) + std::fabs(lo) + 1.0);
+    lo -= 0.05 * d;
+    hi += 0.05 * d;
 }
 
 // --- HTML: одна XY-диаграмма (ВДС шейки) ---
-static void save_html_crankpin(const std::string& path,
-                               const std::vector<double>& Zs,
-                               const std::vector<double>& Ts,
-                               const std::vector<double>& Adeg,
-                               double Pc_prime,
-                               const Params& p)
+void save_html_crankpin(const std::string& path,
+                        const std::vector<double>& Zs,
+                        const std::vector<double>& Ts,
+                        const std::vector<double>& Adeg,
+                        double Pc_prime,
+                        const Params& p,
+                        double Fp)
 {
     auto minmax = [](const std::vector<double>& v){
+        if (v.empty()) return std::pair<double,double>(0.0, 1.0);
         auto it = std::minmax_element(v.begin(), v.end());
-        return std::pair<double,double>(*it.first,*it.second);
+        return std::pair<double,double>(*it.first, *it.second);
     };
     auto [Zmin,Zmax] = minmax(Zs);
     auto [Tmin,Tmax] = minmax(Ts);
-    double Xlo = std::min(Zmin,0.0), Xhi = std::max(Zmax,0.0);
-    double Ylo = std::min(Tmin,0.0), Yhi = std::max(Tmax,0.0);
-    pad_range(Xlo,Xhi); pad_range(Ylo,Yhi);
+
+    double Xlo = std::min(Zmin, 0.0), Xhi = std::max(Zmax, 0.0);
+    double Ylo = std::min(Tmin, 0.0), Yhi = std::max(Tmax, 0.0);
+    pad_range(Xlo, Xhi);
+    pad_range(Ylo, Yhi);
 
     std::ofstream f(path);
     if(!f) return;
@@ -44,7 +49,8 @@ static void save_html_crankpin(const std::string& path,
         f << "]";
     };
 
-    const double Fp = M_PI*p.diam_cyl*p.diam_cyl/4.0;
+    const double m2_eff = p.m_2 * Fp;
+    const double omega  = (p.w != 0.0 ? p.w : (2.0 * PI * p.n / 60.0));
 
     f <<
 R"(<!doctype html><html lang="ru"><head><meta charset="utf-8">
@@ -61,12 +67,12 @@ canvas{width:100%;height:540px;background:#0e1114;border-radius:8px}
   <h2>Векторная диаграмма сил шатунной шейки</h2>
   <div class="small" style="margin:10px 0">
     <span class="badge">r=)" << p.r << R"( м</span>
-    <span class="badge">ω=)" << p.w << R"( рад/с</span>
+    <span class="badge">ω=)" << omega << R"( рад/с</span>
     <span class="badge">D=)" << p.diam_cyl << R"( м</span>
     <span class="badge">Fₚ=πD²/4=)" << Fp << R"( м²</span>
-    <span class="badge">m₂(уд.)=)" << p.m_2 << R"( кг/м² → m₂=Fₚ·m₂=)" << (p.m_2*Fp) << R"( кг</span>
+    <span class="badge">m₂(уд.)=)" << p.m_2 << R"( кг/м² → m₂=Fₚ·m₂=)" << m2_eff << R"( кг</span>
     <span class="badge">P′c=)" << Pc_prime << R"( Н</span>
-    <span class="badge">Построение по (Z+P′c, T)</span>
+    <span class="badge">Построение по (X=Z+P′c, Y=T)</span>
   </div>
   <div class="box"><canvas id="c"></canvas></div>
 </div>
@@ -119,6 +125,7 @@ for(let i=0;i<A.length;i++){ if(Math.round(A[i])%10===0){ let x=xMap(Zs[i]), y=y
 </script></body></html>
 )";
 }
+} // namespace
 
 // --- основной расчёт ---
 VDSCrankpinResults build_vds_crankpin(const Params& p,
@@ -128,9 +135,14 @@ VDSCrankpinResults build_vds_crankpin(const Params& p,
                                       bool auto_open_html)
 {
     VDSCrankpinResults R{};
-    const double Fp = M_PI * p.diam_cyl * p.diam_cyl / 4.0; // м²
-    R.m2_eff   = p.m_2 * Fp;                                // кг
-    R.Pc_prime = R.m2_eff * p.r * p.w * p.w;                // Н
+
+    // Площадь поршня и m2
+    const double Fp = PI * p.diam_cyl * p.diam_cyl / 4.0; // м²
+    R.m2_eff   = p.m_2 * Fp;                              // кг
+
+    // Угловая скорость (если p.w=0 — берём из n)
+    const double omega = (p.w != 0.0 ? p.w : (2.0 * PI * p.n / 60.0));
+    R.Pc_prime = R.m2_eff * p.r * omega * omega;          // Н
 
     const size_t N = fr.alpha_deg.size();
     R.alpha_deg = fr.alpha_deg;
@@ -138,10 +150,11 @@ VDSCrankpinResults build_vds_crankpin(const Params& p,
     R.T_same.resize(N);
 
     for (size_t i=0;i<N;++i){
-        R.Z_shifted[i] = fr.Z[i] + R.Pc_prime; // смещение по Z
-        R.T_same[i]    = fr.T[i];
+        R.Z_shifted[i] = fr.Z[i] + R.Pc_prime; // смещение по X: Z → Z+P′c
+        R.T_same[i]    = fr.T[i];              // по Y без изменений
     }
 
+    // CSV
     if (!out_csv.empty()){
         std::ofstream f(out_csv);
         if (f){
@@ -153,8 +166,9 @@ VDSCrankpinResults build_vds_crankpin(const Params& p,
         }
     }
 
+    // HTML
     if (!out_html.empty()){
-        save_html_crankpin(out_html, R.Z_shifted, R.T_same, R.alpha_deg, R.Pc_prime, p);
+        save_html_crankpin(out_html, R.Z_shifted, R.T_same, R.alpha_deg, R.Pc_prime, p, Fp);
     #ifdef _WIN32
         if (auto_open_html) {
             ShellExecuteA(nullptr, "open", out_html.c_str(), nullptr, nullptr, SW_SHOWNORMAL);

@@ -3,76 +3,71 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
 
 #ifdef _WIN32
   #include <windows.h>
 #endif
 
-// безопасный clamp для аргумента asin
-static inline double clamp11(double x){ return x<-1.0? -1.0 : (x>1.0? 1.0 : x); }
-static inline double deg2rad(double d){ return d * M_PI / 180.0; }
+namespace {
+constexpr double PI = 3.1415926535897932384626433832795;
 
-// Поршневое перемещение (от ВМТ) и объём над поршнем для КШМ при угле a (рад).
-// Формулы как мы использовали ранее:
-// beta = asin(λ sin a); S_p = R(1 - cos a) + L(1 - cos beta); V(a) = Vc + F_p * S_p
-static inline double piston_S(double R, double L, double lambda, double a){
-    // beta через lambda (страховка на случай несоответствия R/L)
-    double s = clamp11(lambda * std::sin(a));
-    double beta = std::asin(s);
-    double Sp = R*(1.0 - std::cos(a)) + L*(1.0 - std::cos(beta));
-    return Sp;
+inline double clamp(double x, double lo, double hi){
+    return x < lo ? lo : (x > hi ? hi : x);
 }
+inline double deg2rad(double d){ return d * PI / 180.0; }
+inline double rad2deg(double r){ return r * 180.0 / PI; }
 
-static inline double volume_V(double Vc, double Fp, double R, double L, double lambda, double a){
+// Поршневое перемещение S(a) (от ВМТ) и объём над поршнем V(a) при угле a (рад).
+// beta = asin(λ sin a); S = R(1 - cos a) + L(1 - cos beta); V = Vc + Fp * S.
+inline double piston_S(double R, double L, double lambda, double a){
+    const double s = clamp(lambda * std::sin(a), -1.0, 1.0);
+    const double beta = std::asin(s);
+    return R*(1.0 - std::cos(a)) + L*(1.0 - std::cos(beta));
+}
+inline double volume_V(double Vc, double Fp, double R, double L, double lambda, double a){
     return Vc + Fp * piston_S(R, L, lambda, a);
 }
 
-// простая бисекция для решения V(a) = V_target на интервале [aL,aR] (рад)
-static double solve_phi_bisect(double Vc, double Fp, double R, double L, double lambda,
-                               double V_target,
-                               double aL, double aR, double eps = 1e-10, int itmax = 200)
+// Надёжная бисекция V(a)=Vt на [aL,aR], если Vt вне диапазона — прижимаем к краю
+double solve_phi_bisect(double Vc, double Fp, double R, double L, double lambda,
+                        double Vt, double aL, double aR,
+                        double eps = 1e-12, int itmax = 200)
 {
-    double fL = volume_V(Vc,Fp,R,L,lambda,aL) - V_target;
-    double fR = volume_V(Vc,Fp,R,L,lambda,aR) - V_target;
-    // если концовка не охватывает корень, попробуем расширить вправо
-    if (fL*fR > 0.0){
-        // попробуем увеличить верхнюю границу до π (180°)
-        aR = M_PI;
-        fR = volume_V(Vc,Fp,R,L,lambda,aR) - V_target;
-        if (fL*fR > 0.0){
-            // корня нет на [0..π] — вернём небольшой угол (пусть φ≈0)
-            return 0.0;
-        }
-    }
+    double VL = volume_V(Vc,Fp,R,L,lambda,aL);
+    double VR = volume_V(Vc,Fp,R,L,lambda,aR);
+
+    // монотонность на [0..π] гарантирована, прижимаем к краям
+    if (Vt <= VL) return aL;
+    if (Vt >= VR) return aR;
+
     for (int it=0; it<itmax; ++it){
-        double mid = 0.5*(aL+aR);
-        double fm  = volume_V(Vc,Fp,R,L,lambda,mid) - V_target;
-        if (std::fabs(fm) < eps || (aR-aL) < 1e-12) return mid;
-        if (fL*fm <= 0.0){ aR = mid; fR = fm; }
-        else             { aL = mid; fL = fm; }
+        const double am = 0.5*(aL+aR);
+        const double Vm = volume_V(Vc,Fp,R,L,lambda,am);
+        if (std::fabs(Vm - Vt) < eps || (aR - aL) < 1e-12) return am;
+        if (Vm > Vt) { aR = am; VR = Vm; } else { aL = am; VL = Vm; }
     }
     return 0.5*(aL+aR);
 }
 
 // --- HTML отрисовка P(α) ---
-static void save_palpha_html(const std::string& path,
-                             const std::vector<double>& alpha_deg,
-                             const std::vector<double>& P_pa,
-                             double phi_deg,
-                             const IndicatorResults& ind)
+void save_palpha_html(const std::string& path,
+                      const std::vector<double>& alpha_deg,
+                      const std::vector<double>& P_pa,
+                      double phi_deg,
+                      const IndicatorResults& ind)
 {
-    // Перевод давления в МПа для графика
+    // Давление в МПа для графика
     std::vector<double> P_MPa; P_MPa.reserve(P_pa.size());
     for (double x: P_pa) P_MPa.push_back(x * 1e-6);
 
-    // Диапазоны
-    auto [aminIt, amaxIt] = std::minmax_element(alpha_deg.begin(), alpha_deg.end());
-    auto [pminIt, pmaxIt] = std::minmax_element(P_MPa.begin(), P_MPa.end());
-    double Amin=*aminIt, Amax=*amaxIt, Pmin=*pminIt, Pmax=*pmaxIt;
-    if (Amax<=Amin) { Amax=Amin+1.0; }
+    auto mm = [](const std::vector<double>& v){
+        auto it = std::minmax_element(v.begin(), v.end());
+        return std::pair<double,double>(v.empty()?0:*it.first, v.empty()?0:*it.second);
+    };
+    auto [Amin0,Amax0] = mm(alpha_deg);
+    auto [Pmin0,Pmax0] = mm(P_MPa);
+    double Amin=Amin0, Amax=Amax0, Pmin=Pmin0, Pmax=Pmax0;
+    if (Amax<=Amin) Amax=Amin+1.0;
     double Apad = (Amax-Amin)*0.02;
     double Ppad = (Pmax-Pmin)*0.10; if (Ppad==0) Ppad=0.1;
     Amin -= Apad; Amax += Apad; Pmin -= Ppad; Pmax += Ppad;
@@ -98,7 +93,7 @@ R"(<!doctype html>
 </head><body>
 <div class="card">
   <h1>P(α) — развёртка индикаторной диаграммы</h1>
-  <div class="meta">Давление — в МПа, угол α — в градусах (0…720). Вертикальные линии: 0, 180, 360, 540, 720 и α=360+φ.</div>
+  <div class="meta">Давление — МПа, угол α — градусы (0…720). Вертикальные линии: 0, 180, 360, 540, 720 и α=360+φ.</div>
   <canvas id="palpha" width="1050" height="520"></canvas>
   <div class="row" style="margin-top:12px">
     <div class="box"><h3>Опорные давления</h3>
@@ -119,11 +114,13 @@ R"(<!doctype html>
 <script>
 const A = )";
 
-    f << "[";
-    for (size_t i=0;i<alpha_deg.size();++i){ if(i) f<<","; f<<alpha_deg[i]; }
-    f << "];\nconst P = [";
-    for (size_t i=0;i<P_MPa.size();++i){ if(i) f<<","; f<<P_MPa[i]; }
-    f << "];\n";
+    auto dump = [&](const std::vector<double>& v){
+        f << "[";
+        for (size_t i=0;i<v.size();++i){ if (i) f<<","; f<<v[i]; }
+        f << "]";
+    };
+
+    dump(alpha_deg); f << ";\nconst P = "; dump(P_MPa); f << ";\n";
     f << "const Amin="<<Amin<<", Amax="<<Amax<<", Pmin="<<Pmin<<", Pmax="<<Pmax<<";\n";
     f << "const phiDeg="<<phi_deg<<";\n";
 
@@ -161,7 +158,7 @@ for (let i=0;i<=6;i++){ let a=Amin+(Amax-Amin)*i/6; let x=xMap(a); ctx.fillText(
 ctx.textAlign='right';
 for (let j=0;j<=5;j++){ let p=Pmin+(Pmax-Pmin)*j/5; let y=yMap(p); ctx.fillText(p.toFixed(2), padL-6, y+4); }
 
-// вертикальные ориентиры: 0,180,360,540,720, 360+φ
+// вертикальные ориентиры: 0,180,360,540,720, и 360+φ
 const marks=[0,180,360,540,720, 360+phiDeg];
 ctx.strokeStyle='#475569'; ctx.setLineDash([4,4]); ctx.beginPath();
 for (let m of marks){ if(m < Amin || m > Amax) continue; let x=xMap(m);
@@ -177,18 +174,18 @@ for (let i=0;i<A.length;i++){
 }
 ctx.stroke();
 
-// надписи к вертикалям (сверху)
+// подписи к вертикалям
 ctx.fillStyle='#94a3b8'; ctx.textAlign='center';
-function label(x,txt){ ctx.fillText(txt, x, padT+12); }
 for (let m of [0,180,360,540,720]){
-  if(m < Amin || m > Amax) continue; label(xMap(m), m.toFixed(0));
+  if(m < Amin || m > Amax) continue;
+  ctx.fillText(String(m), xMap(m), padT+12);
 }
-if (360+phiDeg >= Amin && 360+phiDeg <= Amax) label(xMap(360+phiDeg), '360+φ');
-
+if (360+phiDeg >= Amin && 360+phiDeg <= Amax) ctx.fillText('360+φ', xMap(360+phiDeg), padT+12);
 </script>
 </body></html>
 )";
 }
+} // namespace
 
 // --- основной расчёт ---
 PAlphaResults build_P_alpha(const Params& p,
@@ -200,75 +197,70 @@ PAlphaResults build_P_alpha(const Params& p,
 {
     PAlphaResults R{};
 
-    // геометрия
+    // Геометрия
     const double Rcr = p.r;                 // радиус кривошипа
-    double lambda = p.lyambda;              // геом. характеристика КШМ (R/L)
-    double Lrod   = p.leng_rod;            // длина шатуна
+    double lambda    = p.lyambda;           // геом. характеристика λ = R/L
+    double Lrod      = p.leng_rod;          // длина шатуна
+    if (lambda <= 0.0 && Lrod   > 0.0) lambda = Rcr / Lrod;
+    if (Lrod   <= 0.0 && lambda > 0.0) Lrod   = Rcr / lambda;
 
-    // согласование λ и L на случай, если одно из них «главное»
-    if (lambda <= 0.0 && Lrod > 0.0) lambda = Rcr / Lrod;
-    if (Lrod   <= 0.0 && lambda > 0.0) Lrod = Rcr / lambda;
+    const double Fp  = PI * p.diam_cyl * p.diam_cyl / 4.0;
 
-    const double Fp  = M_PI * p.diam_cyl * p.diam_cyl / 4.0;
-
-    // из индикаторной диаграммы: опорные давления/объёмы
+    // Опорные давления/объёмы из индикаторной диаграммы
     const double Vc  = ind.Vc;
     const double Va  = ind.Va;
-    const double Vz_ = ind.Vz_; // Vc * rho
+    const double Vz_ = ind.Vz_;   // объём после изобарного подогрева
     const double Pa  = ind.Pa;
     const double Pr  = ind.Pr;
     const double Pz  = ind.Pz;
     const double n1  = p.n_1;
     const double n2  = p.n_2;
 
-    // найдём φ: V(φ) = Vz_ (радианы, от 0..π)
-    double phi = solve_phi_bisect(Vc, Fp, Rcr, Lrod, lambda, Vz_, 0.0, M_PI/2.0);
-    R.phi_deg = phi * 180.0 / M_PI;
+    // φ: решаем V(φ) = Vz' на [0..π]
+    const double phi = solve_phi_bisect(Vc, Fp, Rcr, Lrod, lambda, Vz_, 0.0, PI);
+    R.phi_deg = rad2deg(phi);
 
-    // сетка по α
-    const double Amax = (p.tau == 4 ? 720.0 : 360.0);
+    // Сетка по α
+    const double Amax = (std::lround(p.tau) == 4 ? 720.0 : 360.0);
     if (step_deg <= 0.0) step_deg = 1.0;
-    int N = (int)std::floor(Amax / step_deg) + 1;
+    const int N = static_cast<int>(std::floor(Amax / step_deg)) + 1;
 
     R.alpha_deg.resize(N);
     R.V_alpha.resize(N);
     R.P_alpha.resize(N);
 
     for (int i=0;i<N;++i){
-        double a_deg = i * step_deg;
-        double a     = deg2rad(a_deg);
-        double V     = volume_V(Vc, Fp, Rcr, Lrod, lambda, std::fmod(a, 2*M_PI)); // период 2π
+        const double a_deg = i * step_deg;
+        const double a     = deg2rad(std::fmod(a_deg, 360.0));    // кинематика периодична 2π
+        const double V     = volume_V(Vc, Fp, Rcr, Lrod, lambda, a);
 
-        // кусочно-заданное P(α)
         double P = 0.0;
-        if (p.tau == 4) {
+        if (std::lround(p.tau) == 4) {
             if (a_deg < 180.0) {
                 // впуск
                 P = Pa;
             } else if (a_deg < 360.0) {
                 // сжатие
                 P = Pa * std::pow(Va / V, n1);
-            } else if (std::abs(a_deg - 360.0) < 1e-9 || a_deg <= 360.0 + R.phi_deg) {
+            } else if (a_deg <= 360.0 + R.phi_deg + 1e-12) {
                 // изобара при Pz (добавление теплоты)
                 P = Pz;
             } else if (a_deg < 540.0) {
-                // расширение (политропа)
+                // расширение
                 P = Pz * std::pow(Vz_ / V, n2);
             } else {
                 // выпуск
                 P = Pr;
             }
         } else {
-            // 2-тактный: упрощённая схема — один рабочий цикл на 360°
-            double a360 = std::fmod(a_deg, 360.0);
+            // 2-тактный: упрощённая схема
+            const double a360 = std::fmod(a_deg, 360.0);
             if (a360 < 180.0) {
-                // сжатие до ~180°, затем быстрый рост P к Pz и расширение до 360°
-                if (a360 < 160.0)      P = Pa * std::pow(Va / V, n1);
-                else if (a360 < 180.0) P = Pz;
-                else                   P = Pz * std::pow(Vz_ / V, n2);
+                if (a360 < 160.0)      P = Pa * std::pow(Va / V, n1);  // сжатие
+                else if (a360 < 180.0) P = Pz;                          // вспышка/изобара
+                else                   P = Pz * std::pow(Vz_ / V, n2);  // расширение
             } else {
-                // продувка/наполнение — близко к Pa
-                P = Pa;
+                P = Pa; // продувка/наполнение
             }
         }
 
@@ -281,7 +273,7 @@ PAlphaResults build_P_alpha(const Params& p,
     if (!output_csv_path.empty()){
         std::ofstream f(output_csv_path);
         if (f){
-            f << "alpha_deg,P, V\n";
+            f << "alpha_deg,P,V\n";
             for (size_t i=0;i<R.alpha_deg.size();++i){
                 f << R.alpha_deg[i] << "," << R.P_alpha[i] << "," << R.V_alpha[i] << "\n";
             }

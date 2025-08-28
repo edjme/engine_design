@@ -1,22 +1,24 @@
 <!doctype html>
-<html lang="ru"><head<meta charset="utf-8">
-<title>Индикаторная диаграмма P–V</title>
-<meta charset="utf-8">
-<style>
-  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;padding:16px;background:#0b0d0f;color:#e8e8e8;}
-  .card{max-width:1000px;margin:auto;background:#121417;border:1px solid #23262d;border-radius:12px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.35);}
-  h1{margin:0 0 12px 0;font-size:20px}
-  canvas{width:100%;height:600px;background:#0e1114;border-radius:8px}
-  .meta{font-size:12px;color:#aab;}
-  .row{display:flex;gap:16px;flex-wrap:wrap}
-  .box{flex:1 1 240px;background:#0e1114;border:1px solid #23262d;border-radius:8px;padding:8px}
-  .box h3{margin:0 0 6px 0;font-size:13px;color:#c7d2fe}
-  code{color:#cbd5e1}
-</style>
-)</" << "head><body>\n"
-<< R"(<div class="card">
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>Индикаторная диаграмма P–V</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;padding:16px;background:#0b0d0f;color:#e8e8e8;}
+    .card{max-width:1000px;margin:auto;background:#121417;border:1px solid #23262d;border-radius:12px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.35);}
+    h1{margin:0 0 12px 0;font-size:20px}
+    canvas{width:100%;height:600px;background:#0e1114;border-radius:8px}
+    .meta{font-size:12px;color:#aab;}
+    .row{display:flex;gap:16px;flex-wrap:wrap}
+    .box{flex:1 1 240px;background:#0e1114;border:1px solid #23262d;border-radius:8px;padding:8px}
+    .box h3{margin:0 0 6px 0;font-size:13px;color:#c7d2fe}
+    code{color:#cbd5e1}
+  </style>
+</head>
+<body>
+<div class="card">
   <h1>Индикаторная диаграмма P–V</h1>
-  <div class="meta">P — в МПа, V — в м³. Контур построен по параметрам из CSV.</div>
+  <div class="meta">P — МПа, V — м³. Контур построен по параметрам из CSV.</div>
   <canvas id="pv" width="1000" height="600"></canvas>
   <div class="row" style="margin-top:12px">
     <div class="box"><h3>Опорные объёмы</h3>
@@ -53,12 +55,9 @@ function yMap(p){ return padT + (1 - ( (p - Pmin) / (Pmax - Pmin) )) * h; }
 // фон
 ctx.fillStyle = '#0e1114'; ctx.fillRect(0,0,W,H);
 
-// оси
-ctx.strokeStyle = '#334155'; ctx.lineWidth = 1;
-ctx.beginPath();
-// рамка
-ctx.rect(padL, padT, w, h);
-// вспомогательные сетки (5×5)
+// рамка + сетка
+ctx.strokeStyle = '#334155'; ctx.lineWidth = 1; ctx.strokeRect(padL, padT, w, h);
+ctx.strokeStyle = '#293241'; ctx.beginPath();
 for(let i=1;i<5;i++){
   let xx = padL + i*w/5, yy = padT + i*h/5;
   ctx.moveTo(xx, padT); ctx.lineTo(xx, padT+h);
@@ -67,16 +66,12 @@ for(let i=1;i<5;i++){
 ctx.stroke();
 
 // подписи осей
-ctx.fillStyle = '#aab';
-ctx.font = '12px system-ui';
+ctx.fillStyle = '#aab'; ctx.font = '12px system-ui';
 ctx.fillText('V (м³)', padL + w/2 - 20, H - 30);
-ctx.save();
-ctx.translate(20, padT + h/2 + 30);
-ctx.rotate(-Math.PI/2);
-ctx.fillText('P (МПа)', 0, 0);
-ctx.restore();
+ctx.save(); ctx.translate(20, padT + h/2 + 30); ctx.rotate(-Math.PI/2);
+ctx.fillText('P (МПа)', 0, 0); ctx.restore();
 
-// метки по осям (5 делений)
+// деления (5 шт)
 ctx.fillStyle = '#cbd5e1';
 ctx.textAlign = 'center';
 for(let i=0;i<=5;i++){
@@ -92,8 +87,7 @@ for(let i=0;i<=5;i++){
 }
 
 // линия контура
-ctx.strokeStyle = '#60a5fa'; // лазурный
-ctx.lineWidth = 2;
+ctx.strokeStyle = '#60a5fa'; ctx.lineWidth = 2;
 ctx.beginPath();
 for(let i=0;i<V.length;i++){
   let x = xMap(V[i]), y = yMap(P[i]);
@@ -101,12 +95,13 @@ for(let i=0;i<V.length;i++){
 }
 ctx.stroke();
 
-// точки a, c, z, z', b (пример маркеров)
-function dot(v,p,color){ ctx.fillStyle=color; ctx.beginPath(); ctx.arc(xMap(v),yMap(p),4,0,6.283); ctx.fill(); }
-dot(0.00124407,0.09, '#34d399'); // a
-dot(0.000103673,2.7766, '#fbbf24'); // c
-dot(0.000103673,5.55319, '#f59e0b'); // z
-dot(0.000139958,5.55319, '#fb7185'); // z'
-dot(0.00124407,0.386321, '#22d3ee'); // b
+// ключевые точки (a,c,z,z',b)
+function dot(v,p,color){ ctx.beginPath(); ctx.fillStyle=color; ctx.arc(xMap(v),yMap(p),4,0,6.283); ctx.fill(); }
+dot(0.00124407,0.09, '#34d399');
+dot(0.000103673,2.7766, '#fbbf24');
+dot(0.000103673,5.55319, '#f59e0b');
+dot(0.000139958,5.55319, '#fb7185');
+dot(0.00124407,0.386321, '#22d3ee');
 </script>
-</body></html>
+</body>
+</html>
