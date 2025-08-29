@@ -1,0 +1,36 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build C++ project",
+            "type": "shell",
+            "command": "g++",
+            "args": [
+                "main.cpp",
+                "input_data/input.cpp",
+                "Calculations/calc_mass_crankshaft.cpp",
+                "-o",
+                "main.exe",
+                "-finput-charset=UTF-8",
+                "-fexec-charset=UTF-8",
+                "-I.",
+                "-Iinput_data",
+                "-ICalculations",
+                "-g",
+                "Calculations/ind_diagr.cpp",
+                "Calculations/diag_palpha.cpp",
+                "Calculations/forces_ksm.cpp",
+                "Calculations/vds_crankpin.cpp",
+                "Calculations/cw_counterweights.cpp"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "detail": "Компиляция всех cpp файлов в main.exe"
+        }
+    ]
+}
