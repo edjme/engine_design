@@ -1,0 +1,45 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8">
+<title>Уравновешивание инерционных воздействий</title>
+<style>
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;padding:16px;background:#0b0d0f;color:#e8e8e8;}
+.card{max-width:1050px;margin:auto;background:#121417;border:1px solid #23262d;border-radius:12px;padding:16px}
+h1{margin:0 0 12px 0;font-size:20px}
+table{width:100%;border-collapse:collapse;margin-top:12px}
+td,th{border:1px solid #23262d;padding:8px;font-size:13px}
+th{background:#0e1114;text-align:left}
+.note{color:#aab;font-size:12px}
+.ok{color:#34d399}.err{color:#f87171}
+</style></head><body>
+<div class="card">
+<h1>Уравновешивание инерционных воздействий</h1>
+<div class="note">Схема: 2 цилиндра, 4Т, γ=180° (полноопорный, моментная схема)</div><table>
+<tr><th>База</th><th>Значение</th></tr>
+<tr><td>Fₚ = πD²/4</td><td>0.00950332 м²</td></tr>
+<tr><td>M_pd = m_pd·Fₚ</td><td>1.04536 кг</td></tr>
+<tr><td>r</td><td>0.06 м</td></tr>
+<tr><td>λ</td><td>0.333333</td></tr>
+<tr><td>ω</td><td>408.407 рад/с</td></tr>
+<tr><td>τ (тактность)</td><td>4</td></tr>
+<tr><td>n_cyl</td><td>2</td></tr>
+<tr><td>γ (град)</td><td>180</td></tr>
+<tr><td>m_root_reduce</td><td>524.027 кг/м²</td></tr>
+<tr><td>m_rotating</td><td>597.357 кг/м²</td></tr>
+</table>
+
+<table>
+<tr><th>Плечи/расстояния</th><th>Значение</th></tr>
+<tr><td>axis_p</td><td>0.177 м</td></tr>
+<tr><td>web_p</td><td>0.257 м</td></tr>
+<tr><td>axis_n</td><td>0.08 м</td></tr>
+<tr><td>web_n</td><td>0.16 м</td></tr>
+<tr><td>c_lanch</td><td>0.354 м</td></tr>
+<tr><td>формула c_lanch</td><td>c_lanch = web_p + depth_web + length_root_neck</td></tr>
+</table>
+
+<table>
+<tr><th>Результаты</th><th>Значение</th></tr>
+<tr><td>S_prot1 — от момента 1-го порядка</td><td>0.0156805 кг·м</td></tr>
+<tr><td>S_prot2 — от момента 2-го порядка</td><td>0.00130671 кг·м</td></tr>
+<tr><td>Статус</td><td><span class='ok'>OK</span></td></tr>
+</table>
+</div></body></html>
