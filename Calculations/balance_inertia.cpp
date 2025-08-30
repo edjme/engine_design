@@ -13,7 +13,7 @@ namespace
 
     static inline double area_piston(double D) { return PI * D * D / 4.0; }
 
-    // c_lanch по ТЗ:
+    // c_lanch по ТЗ: Расстояниие между противовесами для Ланчестера
     //  - неполноопорный: c_lanch = web_n + depth_web + length_root_neck
     //  - полноопорный:   c_lanch = web_p + depth_web + length_root_neck
     static double calc_c_lanch(bool nonfull,
@@ -162,13 +162,13 @@ BalanceResults build_balance_inertia(const Params &p,
     R.m_rotating = cm.m_rotating;
 
     // Плечи из блока масс
-    R.axis_p = cm.axis_p;
-    R.web_p = cm.web_p;
-    R.axis_n = cm.axis_n;
-    R.web_n = cm.web_n;
+    R.axis_p = cm.axis_p; // Для полноопорного расстояние между осями цилиндров
+    R.web_p = cm.web_p;   // Для полноопорного расстояние между щеками
+    R.axis_n = cm.axis_n; // Для неполноопорного расстояние между осями цилиндров
+    R.web_n = cm.web_n;   // Для неполноопорного расстояние между щеками
 
-    const bool nonfull = (std::lround(p.config_crankshaft) == 2);
-
+    const bool nonfull = (std::lround(p.config_crankshaft) == 2); // nonfull - неполноопорный вал, иначе - полноопорный
+    //---------Нахождение статических моментов для уравновешивания сил инерции 1го и 2го порядка и их моментов
     if (R.n_cyl == 1)
     {
         // ---------------- 1 цилиндр (стандартный) ----------------
@@ -182,14 +182,16 @@ BalanceResults build_balance_inertia(const Params &p,
         R.mode = "1 цилиндр (силовая схема)";
         R.ok = true;
     }
+    //--------------2 цилиндра --------------------------
     else if (R.n_cyl == 2)
     {
+        //--------4 такта--------------
         if (R.tau == 4)
         {
-            if (std::fabs(R.gamma_deg) < 1e-6)
+            if (std::fabs(R.gamma_deg) < 1e-6) // Угол развала равен 0
             {
                 // -------- 2 цилиндра, 4Т, γ=0° --------
-                if (nonfull)
+                if (nonfull) // Проверка на неполноопорный вал
                 {
                     R.ok = false;
                     R.mode = "2 цилиндра, 4Т, γ=0°";
@@ -199,7 +201,7 @@ BalanceResults build_balance_inertia(const Params &p,
                 {
                     // S_prot1 = M_pd * r
                     // S_prot2 = 0.25 * M_pd * λ * r
-                    R.S_prot1 = 1.0 * R.M_pd * R.R;
+                    R.S_prot1 = R.M_pd * R.R;
                     R.S_prot2 = 0.25 * R.M_pd * R.lambda * R.R;
                     R.S1_label = "от силы 1-го порядка";
                     R.S2_label = "от силы 2-го порядка";
@@ -207,16 +209,16 @@ BalanceResults build_balance_inertia(const Params &p,
                     R.ok = true;
                 }
             }
-            else if (std::fabs(std::fabs(R.gamma_deg) - 180.0) < 1e-6)
+            else if (std::fabs(std::fabs(R.gamma_deg) - 180.0) < 1e-6) // Угол развала равен 180 (оппозитный двигатель)
             {
                 // -------- 2 цилиндра, 4Т, γ=180° (оппозит), моментная схема --------
-                R.c_lanch = calc_c_lanch(nonfull, cm, p, R.c_lanch_note);
-                if (nonfull)
+                R.c_lanch = calc_c_lanch(nonfull, cm, p, R.c_lanch_note); // Для моментов необходимо использовать расстояние между противовесами
+                if (nonfull)                                              // Если неполноопорный
                 {
                     // c_lanch уже посчитан по web_n
-                    // S_prot1 = M_pd * r * (axis_n) / c_lanch
+                    // S_prot1 = 0.5*M_pd * r * (axis_n) / c_lanch
                     // S_prot2 = 0.125 * M_pd * λ * r * (axis_n) / c_lanch
-                    R.S_prot1 = (R.M_pd * R.R) * (R.axis_n / R.c_lanch);
+                    R.S_prot1 = 0.5 * (R.M_pd * R.R) * (R.axis_n / R.c_lanch);
                     R.S_prot2 = (0.125 * R.M_pd * R.lambda * R.R) * (R.axis_n / R.c_lanch);
                 }
                 else
@@ -233,26 +235,26 @@ BalanceResults build_balance_inertia(const Params &p,
                 R.ok = true;
             }
             else
-            {
+            { // Для промежуточного угла развала пока недоступно
                 R.ok = false;
                 R.mode = "2 цилиндра, 4Т, γ≠0°,180°";
                 R.message = "Пока недоступно.";
             }
         }
         else if (R.tau == 2)
-        {
-            if (std::fabs(R.gamma_deg) < 1e-6)
+        {                                      // для 2 тактов
+            if (std::fabs(R.gamma_deg) < 1e-6) // угол развала 0
             {
                 // -------- 2 цилиндра, 2Т, γ=0° --------
                 R.c_lanch = calc_c_lanch(nonfull, cm, p, R.c_lanch_note);
-                if (nonfull)
+                if (nonfull) // Неполноопорный вал
                 {
                     // S_prot1 = M_pd * r * (axis_n) / (2 * c_lanch)
                     // S_prot2 = 0.125 * M_pd * λ * r
                     R.S_prot1 = (R.M_pd * R.R) * (R.axis_n / (2.0 * R.c_lanch));
                     R.S_prot2 = 0.125 * R.M_pd * R.lambda * R.R;
                 }
-                else
+                else // Полноопорный вал
                 {
                     // S_prot1 = M_pd * r * (axis_p) / (2 * c_lanch)
                     // S_prot2 = 0.125 * M_pd * λ * r
@@ -265,19 +267,19 @@ BalanceResults build_balance_inertia(const Params &p,
                 R.ok = true;
             }
             else
-            {
+            { // Для 2х тактов пока досутпно только для угла развала 0
                 R.ok = false;
                 R.mode = "2 цилиндра, 2Т, γ≠0°";
                 R.message = "Пока недоступно.";
             }
         }
-        else
+        else // Другие тактности не считаем
         {
             R.ok = false;
             R.mode = "2 цилиндра, неизвестная тактность";
             R.message = "Пока недоступно.";
         }
-    }
+    } // 3 цилиндра
     else if (R.n_cyl == 3)
     {
         R.ok = false;
