@@ -23,7 +23,6 @@
                 "Calculations/vds_crankpin.cpp",
                 "Calculations/cw_counterweights.cpp",
                 "Calculations/balance_inertia.cpp",
-                "Interface/ui.cpp",
                 "Interface/gui_win.cpp",
                 "-lgdi32",
                 "-lgdiplus",
@@ -33,7 +32,7 @@
                 "-luuid",
                 "-DUNICODE",
                 "-D_UNICODE",
-                "-municode"
+                "-mwindows"
             ],
             "group": {
                 "kind": "build",

@@ -3,7 +3,7 @@
 #include "Interface/gui_win.h"
 
 // точка входа GUI
-int wmain()
+int main()
 { // или int main(), если собираешь как консольное
     SetConsoleOutputCP(65001);
     return run_gui(); // полностью передаём управление GUI
