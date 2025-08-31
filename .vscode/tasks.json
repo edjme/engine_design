@@ -22,7 +22,18 @@
                 "Calculations/forces_ksm.cpp",
                 "Calculations/vds_crankpin.cpp",
                 "Calculations/cw_counterweights.cpp",
-                "Calculations/balance_inertia.cpp"
+                "Calculations/balance_inertia.cpp",
+                "Interface/ui.cpp",
+                "Interface/gui_win.cpp",
+                "-lgdi32",
+                "-lgdiplus",
+                "-lcomctl32",
+                "-lshell32",
+                "-lole32",
+                "-luuid",
+                "-DUNICODE",
+                "-D_UNICODE",
+                "-municode"
             ],
             "group": {
                 "kind": "build",
