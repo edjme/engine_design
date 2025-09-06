@@ -24,6 +24,7 @@
                 "Calculations/cw_counterweights.cpp",
                 "Calculations/balance_inertia.cpp",
                 "Interface/gui_win.cpp",
+                "Calculations/flywheel_inertia.cpp",
                 "-lgdi32",
                 "-lgdiplus",
                 "-lcomctl32",
