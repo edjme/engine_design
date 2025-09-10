@@ -7,12 +7,11 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-// -------------------- простые утилиты STL --------------------
+// -------------------- утилиты STL (в мм) --------------------
 struct V3
 {
     double x, y, z;
 };
-
 static inline double mm(double m) { return m * 1000.0; }
 
 static void tri(std::ofstream &f, const V3 &n, const V3 &a, const V3 &b, const V3 &c)
@@ -32,17 +31,14 @@ static V3 nXn() { return {-1, 0, 0}; }
 static V3 nYp() { return {0, 1, 0}; }
 static V3 nYn() { return {0, -1, 0}; }
 
-// цилиндр вдоль Z (радиус/высота/центр в МЕТРАХ)
+// цилиндр вдоль Z (радиус/высота/центр – в метрах)
 static void add_cyl_Z_mm(std::ofstream &f, double R_m, double h_m,
                          double cx_m, double cy_m, double z0_m, int seg)
 {
-    const double R = mm(R_m);
-    const double h = mm(h_m);
-    const double cx = mm(cx_m), cy = mm(cy_m);
-    const double z0 = mm(z0_m);
-
-    const double d = 2.0 * M_PI / seg;
-    for (int i = 0; i < seg; i++)
+    const int N = std::max(3, seg);
+    const double R = mm(R_m), h = mm(h_m), cx = mm(cx_m), cy = mm(cy_m), z0 = mm(z0_m);
+    const double d = 2.0 * M_PI / N;
+    for (int i = 0; i < N; i++)
     {
         const double a0 = i * d, a1 = (i + 1) * d;
         const V3 c0{cx, cy, z0}, c1{cx, cy, z0 + h};
@@ -57,46 +53,49 @@ static void add_cyl_Z_mm(std::ofstream &f, double R_m, double h_m,
     }
 }
 
-static void add_block_mm(std::ofstream &f,
-                         double x0_m, double x1_m, double y0_m, double y1_m, double z0_m, double z1_m)
+// призма-трапеция: по Y от y0 до y1; полуширина X: снизу xb, сверху xa; экструзия по Z
+static void add_trapezoid_prism_mm(std::ofstream &f,
+                                   double y0_m, double y1_m, double halfX_bottom_m, double halfX_top_m,
+                                   double z0_m, double z1_m)
 {
-    V3 A{mm(x0_m), mm(y0_m), mm(z0_m)}, B{mm(x1_m), mm(y0_m), mm(z0_m)},
-        C{mm(x1_m), mm(y1_m), mm(z0_m)}, D{mm(x0_m), mm(y1_m), mm(z0_m)};
-    V3 E{mm(x0_m), mm(y0_m), mm(z1_m)}, G{mm(x1_m), mm(y0_m), mm(z1_m)},
-        H{mm(x1_m), mm(y1_m), mm(z1_m)}, K{mm(x0_m), mm(y1_m), mm(z1_m)};
+    const double xb = mm(halfX_bottom_m), xa = mm(halfX_top_m);
+    const double y0 = mm(y0_m), y1 = mm(y1_m);
+    const double z0 = mm(z0_m), z1 = mm(z1_m);
+
+    V3 A{-xb, y0, z0}, B{+xb, y0, z0}, C{+xa, y1, z0}, D{-xa, y1, z0};
+    V3 E{-xb, y0, z1}, F{+xb, y0, z1}, G{+xa, y1, z1}, H{-xa, y1, z1};
+
     tri(f, nZn(), A, C, B);
     tri(f, nZn(), A, D, C);
+    tri(f, nZp(), E, F, G);
     tri(f, nZp(), E, G, H);
-    tri(f, nZp(), E, H, K);
-    tri(f, nXn(), A, E, K);
-    tri(f, nXn(), A, K, D);
-    tri(f, nXp(), B, C, H);
-    tri(f, nXp(), B, H, G);
-    tri(f, nYn(), A, B, G);
-    tri(f, nYn(), A, G, E);
-    tri(f, nYp(), D, K, H);
-    tri(f, nYp(), D, H, C);
+
+    tri(f, nXn(), A, E, H);
+    tri(f, nXn(), A, H, D);
+    tri(f, nXp(), B, C, G);
+    tri(f, nXp(), B, G, F);
+    tri(f, nYn(), A, B, F);
+    tri(f, nYn(), A, F, E);
+    tri(f, nYp(), D, H, G);
+    tri(f, nYp(), D, G, C);
 }
 
-// «стадион» щеки (прямоугольник + 2 полуокружности), экструзия по Z
-static void add_stadium_extrude_Z_mm(std::ofstream &f,
-                                     double x0_m, double x1_m, double y_half_m,
-                                     double z0_m, double z1_m, int seg)
+// «капсула» Y–X с разными радиусами по краям + экструзия по Z
+static void add_tapered_capsule_YX_extrude_Z_mm(std::ofstream &f,
+                                                double y0_m, double y1_m, double halfX_bottom_m, double halfX_top_m,
+                                                double z0_m, double z1_m, int seg)
 {
-    add_block_mm(f, x0_m, x1_m, -y_half_m, +y_half_m, z0_m, z1_m);
-    add_cyl_Z_mm(f, y_half_m, (z1_m - z0_m), x0_m, 0.0, z0_m, seg);
-    add_cyl_Z_mm(f, y_half_m, (z1_m - z0_m), x1_m, 0.0, z0_m, seg);
+    add_trapezoid_prism_mm(f, y0_m, y1_m, halfX_bottom_m, halfX_top_m, z0_m, z1_m);
+    // нижний и верхний «круги»
+    add_cyl_Z_mm(f, halfX_bottom_m, (z1_m - z0_m), 0.0, y0_m, z0_m, seg);
+    add_cyl_Z_mm(f, halfX_top_m, (z1_m - z0_m), 0.0, y1_m, z0_m, seg);
 }
 
-// кольцевой сектор (толстая «луна») вдоль Z, аргументы в МЕТРАХ
+// кольцевой сектор (противовес) вдоль Z
 static void add_sector_ring_Z_mm(std::ofstream &f,
-                                 double r1_m, double r2_m,
-                                 double phi0, double phi1, // углы в радианах
-                                 double cx_m, double cy_m,
-                                 double z0_m, double z1_m,
-                                 int seg)
+                                 double r1_m, double r2_m, double phi0, double phi1,
+                                 double cx_m, double cy_m, double z0_m, double z1_m, int seg)
 {
-    // дискретизируем по углу
     const int n = std::max(3, (int)std::ceil(seg * std::fabs(phi1 - phi0) / (2 * M_PI)));
     const double d = (phi1 - phi0) / n;
     const double r1 = mm(r1_m), r2 = mm(r2_m);
@@ -105,10 +104,8 @@ static void add_sector_ring_Z_mm(std::ofstream &f,
 
     for (int i = 0; i < n; i++)
     {
-        const double a0 = phi0 + i * d;
-        const double a1 = phi0 + (i + 1) * d;
+        const double a0 = phi0 + i * d, a1 = phi0 + (i + 1) * d;
 
-        // нижняя грань
         V3 A{cx + r1 * std::cos(a0), cy + r1 * std::sin(a0), z0};
         V3 B{cx + r2 * std::cos(a0), cy + r2 * std::sin(a0), z0};
         V3 C{cx + r2 * std::cos(a1), cy + r2 * std::sin(a1), z0};
@@ -116,40 +113,35 @@ static void add_sector_ring_Z_mm(std::ofstream &f,
         tri(f, nZn(), A, C, B);
         tri(f, nZn(), A, D, C);
 
-        // верхняя грань
         V3 A2{A.x, A.y, z1}, B2{B.x, B.y, z1}, C2{C.x, C.y, z1}, D2{D.x, D.y, z1};
         tri(f, nZp(), A2, B2, C2);
         tri(f, nZp(), A2, C2, D2);
 
-        // внешняя боковая
         V3 nOut{std::cos((a0 + a1) * 0.5), std::sin((a0 + a1) * 0.5), 0.0};
         tri(f, nOut, B, C, C2);
         tri(f, nOut, B, C2, B2);
 
-        // внутренняя боковая
         V3 nIn{-nOut.x, -nOut.y, 0.0};
         tri(f, nIn, D, A, A2);
         tri(f, nIn, D, A2, D2);
     }
 
-    // торцы сектора (радиальные стенки)
-    auto add_radial_wall = [&](double ang)
+    auto wall = [&](double ang)
     {
         const double c = std::cos(ang), s = std::sin(ang);
         V3 P1{cx + r1 * c, cy + r1 * s, z0};
         V3 P2{cx + r2 * c, cy + r2 * s, z0};
         V3 P3{P2.x, P2.y, z1};
         V3 P4{P1.x, P1.y, z1};
-        V3 n{s, -c, 0.0}; // наруж нормаль ориентируем правильно
+        V3 n{s, -c, 0.0};
         tri(f, n, P1, P2, P3);
         tri(f, n, P1, P3, P4);
     };
-    add_radial_wall(phi0);
-    add_radial_wall(phi1);
+    wall(phi0);
+    wall(phi1);
 }
 
-// -------------------- базовое тело колена --------------------
-
+// -------------------- геометрия Z-компоновки --------------------
 struct LayoutZ
 {
     double z_mainL0, z_mainL1;
@@ -162,7 +154,7 @@ struct LayoutZ
 static LayoutZ layout_from_params(const Params &p)
 {
     LayoutZ L{};
-    const double Lm = p.length_root_neck;
+    const double Lm = 0.5 * p.length_root_neck; // ВЕЗДЕ используем половину
     const double Lr = p.length_rod_neck;
     const double Wz = p.depth_web;
 
@@ -179,182 +171,310 @@ static LayoutZ layout_from_params(const Params &p)
     return L;
 }
 
-// Рисуем само колено (без противовесов)
+// -------------------- отрисовка тела колена --------------------
 static void add_crank_body(std::ofstream &f, const Params &p, CWVariant var, int seg)
 {
-    const double axis_dx = p.r;
+    const double R = p.r;
     const double Rm = 0.5 * p.diam_root_neck;
     const double Rr = 0.5 * p.diam_rod_neck;
-    const double y_half = 0.5 * p.width_web;
+    const double xb = Rm + p.fillet_rad; // низ (у коренной) шире
+    const double xa = Rr + p.fillet_rad; // верх (у шатунной) уже
 
     const LayoutZ L = layout_from_params(p);
 
-    // 1) коренные шейки
-    // левая коренная всегда есть
-    add_cyl_Z_mm(f, Rm, p.length_root_neck, 0.0, 0.0, L.z_mainL0, seg);
-    // правая коренная — только для полноопорных вариантов
+    // 1) коренные
+    add_cyl_Z_mm(f, Rm, (L.z_mainL1 - L.z_mainL0), 0.0, 0.0, L.z_mainL0, seg);
     if (var != CWVariant::SemiSupport)
     {
-        add_cyl_Z_mm(f, Rm, p.length_root_neck, 0.0, 0.0, L.z_mainR0, seg);
+        add_cyl_Z_mm(f, Rm, (L.z_mainR1 - L.z_mainR0), 0.0, 0.0, L.z_mainR0, seg);
     }
 
-    // 2) шатунная шейка
-    add_cyl_Z_mm(f, Rr, p.length_rod_neck, axis_dx, 0.0, L.z_rod0, seg);
+    // 2) шатунная
+    add_cyl_Z_mm(f, Rr, (L.z_rod1 - L.z_rod0), 0.0, R, L.z_rod0, seg);
 
     // 3) щеки
-    // левая щека — всегда полная (стадион)
-    add_stadium_extrude_Z_mm(f, 0.0, axis_dx, y_half, L.z_webL0, L.z_webL1, seg);
+    // левая — полная «капсула»
+    add_tapered_capsule_YX_extrude_Z_mm(f, 0.0, R, xb, xa, L.z_webL0, L.z_webL1, seg);
 
     if (var == CWVariant::SemiSupport)
     {
-        // НЕПОЛНООПОРНЫЙ: правая ПОЛУЩЕКА.
-        // Плоская грань проходит по оси коренной (X = 0),
-        // поэтому строим прямоугольник [0..R] × [−y_half..+y_half] и добавляем ПРАВЫЙ полукруг с центром в X=R.
-        add_block_mm(f, 0.0, axis_dx, -y_half, +y_half, L.z_webR0, L.z_webR1);          // прямоугольная часть
-        add_cyl_Z_mm(f, y_half, (L.z_webR1 - L.z_webR0), axis_dx, 0.0, L.z_webR0, seg); // правый полукруг
-        // (правой коренной здесь нет — см. выше)
+        // правая ПОЛУЩЕКА (без нижнего «круга»)
+        add_trapezoid_prism_mm(f, 0.0, R, xb, xa, L.z_webR0, L.z_webR1);
+        add_cyl_Z_mm(f, xa, (L.z_webR1 - L.z_webR0), 0.0, R, L.z_webR0, seg);
     }
     else
     {
-        // ПОЛНООПОРНЫЕ: правая щека — полная (стадион)
-        add_stadium_extrude_Z_mm(f, 0.0, axis_dx, y_half, L.z_webR0, L.z_webR1, seg);
+        add_tapered_capsule_YX_extrude_Z_mm(f, 0.0, R, xb, xa, L.z_webR0, L.z_webR1, seg);
     }
 }
 
-// -------------------- ПРОТИВОВЕСЫ --------------------
-
-/*
-  Один противовес на продолжении заданной щеки.
-
-  Геометрия/системы координат:
-  - Щёки у нас лежат в плоскости XY, их толщина направлена вдоль Z (экструзия по Z).
-  - Противовес тоже строим в плоскости XY как КОЛЬЦЕВОЙ СЕКТОР,
-    то есть его «угол» задаётся вокруг оси Z.
-  - Сектор ориентируем ВНИЗ по оси Y (в направлении −Y).
-  - По Z размещаем «вплотную снаружи» к соответствующей щеке:
-      * левая щека:  наружу слева → [ z_webL0 - depth_prot ; z_webL0 ]
-      * правая щека: наружу справа → [ z_webR1 ; z_webR1 + depth_prot ]
-*/
+// -------------------- ПРОТИВОВЕСЫ (отрисовка) --------------------
 static void add_one_counterweight(std::ofstream &f, const Params &p,
-                                  bool left,            // true = под левой щекой, false = под правой
-                                  double r1, double r2, // внутренний/внешний радиусы (МЕТРЫ)
-                                  double alpha,         // угол сектора (РАДИАНЫ), 0 < alpha ≤ π
-                                  int seg)              // дискретизация окружности
+                                  bool left, double r1, double r2,
+                                  double alpha, int seg)
 {
-    // Центр щёк в плоскости XY: середина между осями шеек (по X = 0), по Y = 0
-    const double cx = 0.0;
-    const double cy = 0.0;
-
-    // Позиционирование по Z относительно толщи́н щёк
+    const double cx = 0.0, cy = 0.0;
     const LayoutZ L = layout_from_params(p);
+
     double z0, z1;
     if (left)
     {
-        // слева наружу: слой противовеса примыкает к внешней плоскости левой щеки
-        z1 = L.z_webL0;         // плоскость наружной стороны левой щеки
-        z0 = z1 + p.depth_prot; // уходим наружу на thickness = depth_prot
+        z1 = L.z_webL0;
+        z0 = z1 + p.depth_prot;
     }
     else
     {
-        // справа наружу
-        z0 = L.z_webR1; // плоскость наружной стороны правой щеки
+        z0 = L.z_webR1;
         z1 = z0 - p.depth_prot;
     }
 
-    // Ориентируем сектор ВНИЗ по оси X (минус X).
-    // В нашей системе координат «вниз» — угол φ = −π.
-    // Сектор симметрично откладываем вокруг этой оси на ±alpha/2.
-    const double phi_center = -M_PI; // 180°: направление −X
+    // ориентируем вниз по Y
+    const double phi_center = -M_PI / 2;
     const double phi0 = phi_center - 0.5 * alpha;
     const double phi1 = phi_center + 0.5 * alpha;
 
-    // Строим «толстую луну»: кольцевой сектор, экструзия вдоль Z.
     add_sector_ring_Z_mm(f, r1, r2, phi0, phi1, cx, cy, z0, z1, seg);
 }
 
-/*
-  Набор противовесов для варианта компоновки:
-    - FullSupport_V1: два противовеса — под левой и под правой щекой.
-    - FullSupport_V2: один противовес — под правой щекой.
-    - SemiSupport   : один противовес — под левой щекой.
-  Во всех случаях сектор расположен В ПЛОСКОСТИ ЩЁК (XY), вокруг оси Z и смотрит ВНИЗ (−X).
-*/
 static void add_counterweights(std::ofstream &f, const Params &p, CWVariant var,
                                double r1, double r2, double alpha, int seg)
 {
     switch (var)
     {
     case CWVariant::FullSupport_V1:
-        add_one_counterweight(f, p, /*left=*/true, r1, r2, alpha, seg);  // под левой щекой
-        add_one_counterweight(f, p, /*left=*/false, r1, r2, alpha, seg); // под правой щекой
+        add_one_counterweight(f, p, true, r1, r2, alpha, seg);
+        add_one_counterweight(f, p, false, r1, r2, alpha, seg);
         break;
-
     case CWVariant::FullSupport_V2:
-        add_one_counterweight(f, p, /*left=*/true, r1, r2, alpha, seg); // только под левой
+        add_one_counterweight(f, p, true, r1, r2, alpha, seg); // только слева
         break;
-
     case CWVariant::SemiSupport:
-        add_one_counterweight(f, p, /*left=*/true, r1, r2, alpha, seg); // только под левой
+        add_one_counterweight(f, p, true, r1, r2, alpha, seg); // только слева
         break;
     }
 }
 
-// -------------------- API --------------------
+// ============================================================================
+//                      И Н Е Р Ц И Я   О Т Н .   О С И  Z
+// ============================================================================
+//
+// Здесь считаем I_z для «колена + противовесы».
+// Координаты как и в STL: ось Z — ось коренной шейки (направление длины).
+//
+// Формулы:
+//  • Сплошной цилиндр (масса m, радиус R), центр в (cx,cy):
+//      I_z^global = (1/2) m R^2  +  m * (cx^2 + cy^2)
+//  • «Капсула» (трапеция со скользящей полушириной + два полу круга).
+//    Полярный момент площади J_z для трапеции с x(y) = xb + k y, y∈[0..R]:
+//      J_trap = ∫[ (2/3) x(y)^3 + 2 x(y) y^2 ] dy
+//             = (2/3)[ xb^3 R + (3/2) xb^2 k R^2 + xb k^2 R^3 + (1/4) k^3 R^4 ]
+//               + 2[ xb (R^3/3) + k (R^4/4) ]
+//    Полусфера (круг в XY) радиуса a, центр в O:
+//      J_semi(center) = (π a^4)/4,  A_semi = (π a^2)/2
+//    Верхняя полусфера со сдвигом по Y на R:
+//      J_top = J_semi(a_top) + A_semi(a_top) * R^2
+//    Масса/инерция объёма толщиной Wz: m = ρ Wz * Area,  I = ρ Wz * J
+//
+//  • Кольцевой сектор противовеса (угол α, r∈[r1,r2]):
+//      J_sector(площадь) = α (r2^4 - r1^4) / 4
+//      I_sector(объём)   = ρ * depth * J_sector
+//
+// ----------------------------------------------------------------------------
 
+struct AreaJ
+{
+    double A{0.0};
+    double J{0.0};
+};
+
+// J и A трапецеидальной «полосы» (без полукругов) для halfX снизу/сверху
+static AreaJ trapezoid_AJ(double xb, double xa, double R)
+{
+    const double k = (xa - xb) / R; // x(y) = xb + k y
+    // площадь: A = ∫ 2 x(y) dy = (xb+xa) * R
+    const double A = (xb + xa) * R;
+
+    // интеграл J_trap (см. формулы выше)
+    const double term1 = (2.0 / 3.0) * (xb * xb * xb * R + 1.5 * xb * xb * k * R * R + xb * k * k * R * R * R + 0.25 * k * k * k * R * R * R * R);
+
+    const double term2 = 2.0 * (xb * (R * R * R / 3.0) + k * (R * R * R * R / 4.0));
+
+    return {A, term1 + term2};
+}
+
+// Полная капсула (трапеция + 2 полуокружности)
+static AreaJ capsule_AJ(double xb, double xa, double R)
+{
+    AreaJ t = trapezoid_AJ(xb, xa, R);
+
+    const double A_semi_b = 0.5 * M_PI * xb * xb;
+    const double A_semi_t = 0.5 * M_PI * xa * xa;
+    const double J_semi_b = 0.25 * M_PI * xb * xb * xb * xb;                    // центр в (0,0)
+    const double J_semi_t = 0.25 * M_PI * xa * xa * xa * xa + A_semi_t * R * R; // центр смещён на R
+
+    return {t.A + A_semi_b + A_semi_t,
+            t.J + J_semi_b + J_semi_t};
+}
+
+// Полущёка (для неполноопорного справа): трапеция + ВЕРХНЯЯ полуокружность
+static AreaJ half_capsule_AJ(double xb, double xa, double R)
+{
+    AreaJ t = trapezoid_AJ(xb, xa, R);
+    const double A_semi_t = 0.5 * M_PI * xa * xa;
+    const double J_semi_t = 0.25 * M_PI * xa * xa * xa * xa + A_semi_t * R * R;
+    return {t.A + A_semi_t, t.J + J_semi_t};
+}
+
+// масса и I_z цилиндра вдоль Z
+static inline double mass_cyl(double rho, double R, double h) { return rho * M_PI * R * R * h; }
+static inline double Iz_cyl_aboutZ_global(double m, double R, double cx, double cy)
+{
+    return 0.5 * m * R * R + m * (cx * cx + cy * cy);
+}
+
+// суммарная масса/инерция «колена» (без противовесов)
+static void calc_crank_mass_iz(const Params &p, CWVariant var, double &mass_out, double &Iz_out)
+{
+    const double rho = p.rho_material;
+    const LayoutZ L = layout_from_params(p);
+
+    const double R = p.r;
+    const double Rm = 0.5 * p.diam_root_neck;
+    const double Rr = 0.5 * p.diam_rod_neck;
+    const double xb = Rm + p.fillet_rad;
+    const double xa = Rr + p.fillet_rad;
+    const double Wz = p.depth_web;
+
+    double M = 0.0, Iz = 0.0;
+
+    // Коренные
+    {
+        const double hL = (L.z_mainL1 - L.z_mainL0);
+        const double mL = mass_cyl(rho, Rm, hL);
+        M += mL;
+        Iz += Iz_cyl_aboutZ_global(mL, Rm, 0.0, 0.0);
+
+        if (var != CWVariant::SemiSupport)
+        {
+            const double hR = (L.z_mainR1 - L.z_mainR0);
+            const double mR = mass_cyl(rho, Rm, hR);
+            M += mR;
+            Iz += Iz_cyl_aboutZ_global(mR, Rm, 0.0, 0.0);
+        }
+    }
+
+    // Шатунная (центр при (0,R))
+    {
+        const double h = (L.z_rod1 - L.z_rod0);
+        const double m = mass_cyl(rho, Rr, h);
+        M += m;
+        Iz += Iz_cyl_aboutZ_global(m, Rr, 0.0, R);
+    }
+
+    // Щёки
+    {
+        // Левая — полная капсула
+        AreaJ AJ_L = capsule_AJ(xb, xa, R);
+        const double mL = rho * Wz * AJ_L.A;
+        const double iL = rho * Wz * AJ_L.J;
+        M += mL;
+        Iz += iL;
+
+        if (var == CWVariant::SemiSupport)
+        {
+            // Правая — полущёка
+            AreaJ AJ_R = half_capsule_AJ(xb, xa, R);
+            const double mR = rho * Wz * AJ_R.A;
+            const double iR = rho * Wz * AJ_R.J;
+            M += mR;
+            Iz += iR;
+        }
+        else
+        {
+            // Полная капсула
+            AreaJ AJ_R = capsule_AJ(xb, xa, R);
+            const double mR = rho * Wz * AJ_R.A;
+            const double iR = rho * Wz * AJ_R.J;
+            M += mR;
+            Iz += iR;
+        }
+    }
+
+    mass_out = M;
+    Iz_out = Iz;
+}
+
+// инерция всех противовесов
+static double calc_cw_Iz(const Params &p, CWVariant var, double alpha)
+{
+    // Площадной полярный момент сектора: J = α (r2^4 - r1^4)/4
+    // Объём → I = ρ * depth * J
+    const double J_sector = alpha * (std::pow(p.r_prot2, 4) - std::pow(p.r_prot1, 4)) / 4.0;
+    const double I_one = p.rho_material * p.depth_prot * J_sector;
+
+    int n = 1;
+    if (var == CWVariant::FullSupport_V1)
+        n = 2; // слева и справа
+    // FullSupport_V2 и SemiSupport — по одному
+
+    return I_one * n;
+}
+
+// -------------------- API --------------------
 CWResult build_counterweights_and_export(
     const Params &p,
     const CrankshaftMassResults &cm,
     CWVariant var,
     const std::string &stl_path_mm,
     int seg,
-    bool clamp_alpha_on_limit // можно не использовать, но сигнатуру держим
-)
+    bool clamp_alpha_on_limit)
 {
-    // Параметры противовеса из CSV:
     const double r1 = p.r_prot1;
     const double r2 = p.r_prot2;
     const double depth = p.depth_prot;
 
-    CWResult out{false, 0.0, 0.0, ""};
-
+    CWResult out{};
+    out.ok = false;
+    out.S_prot = 0.0;
+    out.alpha_deg = 0.0;
+    out.message.clear();
+    out.Iz_crank = 0.0;
+    out.Iz_cw = 0.0;
+    out.Iz_total = 0.0;
     if (!(r2 > r1) || depth <= 0.0)
     {
         out.message = "[CW] Неверные r_prot1/r_prot2/depth_prot";
         return out;
     }
 
-    // Площадь поршня
+    // площадь поршня
     const double Fp = M_PI * p.diam_cyl * p.diam_cyl / 4.0;
 
-    // ---- Статический момент S_prot по ТЗ  ----
+    // Статический момент ОДНОГО противовеса
     double S = 0.0;
     switch (var)
     {
     case CWVariant::FullSupport_V1:
-        // S_prot = 0.5 * m_rotating * Fp
         S = 0.5 * cm.m_rotating * Fp * p.r;
         break;
     case CWVariant::FullSupport_V2:
-        // S_prot = m_rotating * Fp * (axis_p / web_p)
         S = cm.m_rotating * Fp * (cm.axis_p / cm.web_p) * p.r;
         break;
     case CWVariant::SemiSupport:
-        // S_prot = m_rotating * Fp * (axis_n / web_n)
         S = cm.m_rotating * Fp * (cm.axis_n / cm.web_n) * p.r;
         break;
     }
     out.S_prot = S;
 
-    // ---- Угол сектора ----
+    // Угол сектора
     const double denom = 2.0 * p.rho_material * depth * (r2 * r2 * r2 - r1 * r1 * r1);
     if (denom <= 0.0)
     {
         out.message = "[CW] Неверные геометрические параметры противовеса";
         return out;
     }
-    double alpha = 2.0 * std::asin((3.0 * S) / denom); // рад
 
-    // ---- Ограничение 180° ----
+    double alpha = 2.0 * std::asin((3.0 * S) / denom); // рад
     if (alpha > M_PI)
     {
         if (clamp_alpha_on_limit)
@@ -374,18 +494,44 @@ CWResult build_counterweights_and_export(
         return out;
     }
 
-    // ---- Пишем STL ----
+    // ---------- расчёт момента инерции вокруг оси Z ----------
+    double M_crank = 0.0, Iz_crank = 0.0;
+    calc_crank_mass_iz(p, var, M_crank, Iz_crank); // тело колена (без CW)
+
+    const double Iz_cw = calc_cw_Iz(p, var, alpha); // сумма противовесов
+    const double Iz_total = Iz_crank + Iz_cw;
+
+    out.Iz_crank = Iz_crank;
+    out.Iz_cw = Iz_cw;
+    out.Iz_total = Iz_total;
+
+    // Вывод в консоль (если запущено как консольный exe)
+    std::cout << u8"[CW] Момент инерции относительно оси коренной шейки (Z):\n"
+              << u8"     I_z(crank без CW) = " << Iz_crank << " кг·м^2\n"
+              << u8"     I_z(противовесы)  = " << Iz_cw << " кг·м^2\n"
+              << u8"     I_z(ИТОГО)        = " << Iz_total << " кг·м^2\n";
+
+    // Добавим в текстовое сообщение (чтобы было видно и в GUI)
+    {
+        char buf[256];
+        std::snprintf(buf, sizeof(buf),
+                      "I_z(crank)=%.6g; I_z(CW)=%.6g; I_z(total)=%.6g (kg·m^2)",
+                      Iz_crank, Iz_cw, Iz_total);
+        if (!out.message.empty())
+            out.message += " | ";
+        out.message += buf;
+    }
+
+    // ---------- STL ----------
     std::ofstream f(stl_path_mm);
     if (!f)
     {
-        out.message = "[CW] Не удалось открыть файл STL для записи";
+        out.message += " | [CW] Не удалось открыть STL для записи";
         return out;
     }
 
     f << "solid crank_with_cw_mm\n";
-    // 1) тело колена
     add_crank_body(f, p, var, seg);
-    // 2) противовесы (вниз, на продолжении щек)
     add_counterweights(f, p, var, r1, r2, alpha, seg);
     f << "endsolid crank_with_cw_mm\n";
 

@@ -1,31 +1,29 @@
-// Calculations/calc_mass_crankshaft.h
 #ifndef CALC_MASS_CRANKSHAFT_H
 #define CALC_MASS_CRANKSHAFT_H
 
-#include "input_data/input.h"
 #include <string>
+#include "input_data/input.h"
 
-// Итоги расчёта масс/СТ (в СИ: метры, килограммы).
-// m_root_reduce и m_rotating — ПРИВЕДЁННЫЕ массы к оси коренной (кг/м^2).
+// Оси: Y — высота (от коренной к шатунной), Z — вдоль коренной (ось коренной),
+// X — ширина.
 struct CrankshaftMassResults {
-    double total_mass;     // кг
-    double x_cg;           // м (от оси коренной шейки по оси X к шатунной)
-    double m_root_reduce;  // кг/м^2
-    double m_rotating;     // кг/м^2
+    double total_mass    = 0.0; // кг
+    double y_cg          = 0.0; // м, расстояние ЦТ от оси коренной по Y (вверх)
+    double m_root_reduce = 0.0; // кг/м^2
+    double m_rotating    = 0.0; // кг/м^2
 
-    // Контрольные расстояния по оси Z для сборки (удобно для CW/геометрии)
-    double axis_p;         // полноопорный: Lm + 2*Wz + Lr
-    double web_p;          // полноопорный: Lm + 3*Wz + 2*Lr
-    double axis_n;         // неполноопорный: Lr + Wz
-    double web_n;          // неполноопорный: 2*Wz + 2*Lr
+    // Контрольные расстояния вдоль Z
+    double axis_p = 0.0; // L_root + 2*depth_web + L_rod
+    double web_p  = 0.0; // L_root + 3*depth_web + 2*L_rod
+    double axis_n = 0.0; // L_rod + depth_web
+    double web_n  = 0.0; // 2*depth_web + 2*L_rod
 };
 
-// Расчёт масс и СТ (метры/килограммы)
+// Масса/ЦТ (с вычитанием объёмов галтелей) и контрольные расстояния.
 CrankshaftMassResults calc_mass_crankshaft(const Params& p);
 
-// Экспорт 3D-модели колена в STL (мм)
-bool export_crank_STL_mm(const Params& p,
-                         const std::string& stl_path,
-                         int seg = 128);
+// Экспорт STL (мм) в системе Y↑, Z→ (ось коренной), X — ширина.
+// В STL галтели визуально не вырезаются (без CSG), но в массе учтены.
+bool export_crank_STL_mm(const Params& p, const std::string& stl_path, int seg = 128);
 
 #endif // CALC_MASS_CRANKSHAFT_H
