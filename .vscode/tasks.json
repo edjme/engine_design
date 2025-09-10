@@ -8,7 +8,6 @@
             "args": [
                 "main.cpp",
                 "input_data/input.cpp",
-                "Calculations/calc_mass_crankshaft.cpp",
                 "-o",
                 "main.exe",
                 "-finput-charset=UTF-8",
@@ -17,14 +16,6 @@
                 "-Iinput_data",
                 "-ICalculations",
                 "-g",
-                "Calculations/ind_diagr.cpp",
-                "Calculations/diag_palpha.cpp",
-                "Calculations/forces_ksm.cpp",
-                "Calculations/vds_crankpin.cpp",
-                "Calculations/cw_counterweights.cpp",
-                "Calculations/balance_inertia.cpp",
-                "Interface/gui_win.cpp",
-                "Calculations/flywheel_inertia.cpp",
                 "-lgdi32",
                 "-lgdiplus",
                 "-lcomctl32",
@@ -33,7 +24,6 @@
                 "-luuid",
                 "-DUNICODE",
                 "-D_UNICODE",
-                "-mwindows"
             ],
             "group": {
                 "kind": "build",
