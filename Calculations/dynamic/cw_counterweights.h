@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 #include "input_data/input.h"
-#include "Calculations/calc_mass_crankshaft.h"
+#include "Calculations/dynamic/calc_mass_crankshaft.h"
 
 // Варианты компоновки противовесов
 enum class CWVariant

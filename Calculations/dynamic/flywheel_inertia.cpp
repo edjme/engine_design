@@ -1,5 +1,5 @@
 // Calculations/flywheel_inertia.cpp
-#include "Calculations/flywheel_inertia.h"
+#include "Calculations/dynamic/flywheel_inertia.h"
 #include <cmath>
 #include <sstream>
 #include <algorithm>

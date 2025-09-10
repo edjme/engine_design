@@ -4,7 +4,7 @@
 #include <vector>
 #include <string>
 #include "input_data/input.h"
-#include "Calculations/diag_palpha.h" // для PAlphaResults
+#include "Calculations/dynamic/diag_palpha.h" // для PAlphaResults
 
 struct ForcesResults
 {

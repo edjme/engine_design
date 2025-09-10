@@ -21,13 +21,13 @@
 
 // ---- расчётные заголовки ----
 #include "input_data/input.h"
-#include "Calculations/ind_diagr.h"
-#include "Calculations/diag_palpha.h"
-#include "Calculations/forces_ksm.h"
-#include "Calculations/vds_crankpin.h"
-#include "Calculations/calc_mass_crankshaft.h"
-#include "Calculations/cw_counterweights.h"
-#include "Calculations/balance_inertia.h"
+#include "Calculations/dynamic/ind_diagr.h"
+#include "Calculations/dynamic/diag_palpha.h"
+#include "Calculations/dynamic/forces_ksm.h"
+#include "Calculations/dynamic/vds_crankpin.h"
+#include "Calculations/dynamic/calc_mass_crankshaft.h"
+#include "Calculations/dynamic/cw_counterweights.h"
+#include "Calculations/dynamic/balance_inertia.h"
 
 using namespace Gdiplus;
 

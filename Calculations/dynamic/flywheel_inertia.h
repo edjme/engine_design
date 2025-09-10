@@ -4,8 +4,8 @@
 #include <string>
 #include <vector>
 
-#include "input_data/input.h"        // Params
-#include "Calculations/forces_ksm.h" // ForcesResults
+#include "input_data/input.h"                // Params
+#include "Calculations/dynamic/forces_ksm.h" // ForcesResults
 
 struct FlywheelInertiaResults
 {

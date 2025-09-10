@@ -1,4 +1,4 @@
-#include "Calculations/balance_inertia.h"
+#include "Calculations/dynamic/balance_inertia.h"
 #include <cmath>
 #include <fstream>
 #include <sstream>
