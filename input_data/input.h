@@ -1,74 +1,50 @@
-#pragma once
-// input.h — чтение исходных данных из CSV в структуру Params.
-// Единицы измерения: если не указано иначе — СИ (м, кг, Па, рад/с, м^3 и т.д.)
+#ifndef KINEMATIC_INPUT_H
+#define KINEMATIC_INPUT_H
 
 #include <string>
+#include <filesystem>
+#include <vector>
 
-// Полный набор параметров, которые используются всеми модулями проекта.
-// Имена и типы — ровно как в исходном проекте, чтобы не ломать совместимость.
-struct Params
+namespace kinio
 {
-    // Геометрия цилиндропоршневой группы
-    double diam_cyl = 0.0; // диаметр цилиндра, м
-    double stroke = 0.0;   // ход поршня, м
-    double epsilent = 0.0; // степень сжатия ε
 
-    // Давления (абсолютные), Па
-    double p_a = 0.0; // на впуске
-    double p_r = 0.0; // на выпуске
+    // Стандартные значения для автогенерации входа кинематики
+    struct Defaults
+    {
+        // Скалярные параметры (SI)
+        double diam_cyl = 0.086;   // м
+        double stroke = 0.086;     // м
+        double conrod_len = 0.170; // м
+        double pin_offset = 0.0;   // м (эксцентриситет поршневого пальца)
+        int rpm = 3000;            // об/мин
+        int cycle_deg = 720;       // град (4Т по умолчанию)
+        double phase_tdc = 0.0;    // град
+        int direction = 1;         // +1 или -1
+        double mass_piston = 0.5;  // кг (на будущее)
+        double mass_conrod = 0.5;  // кг (на будущее)
 
-    // Показатели политропы
-    double n_1 = 0.0; // сжатие
-    double n_2 = 0.0; // расширение
+        // Сетка углов alpha
+        double alpha_start = 0.0;  // град
+        double alpha_stop = 720.0; // град (по умолчанию = cycle_deg)
+        double alpha_step = 1.0;   // град (1° шаг, чтобы не плодить гигантские файлы)
 
-    // Коэффициенты индикаторной диаграммы
-    double lymbda_z = 0.0; // степень повышения давления (Pz/Pc)
-    double ro = 0.0;       // степень предварительного расширения (Vz'/Vz)
+        // Имя файла по умолчанию
+        std::string filename = "kinematic_input.csv";
+    };
 
-    // Геометрическая характеристика КШМ
-    double lyambda = 0.0; // λ = R/L
+    // Создаёт CSV с дефолтами, если файла нет.
+    // path: папка для файла или полный путь до файла. Если path — папка, используется Defaults::filename.
+    // Возвращает true, если файл создан; false, если уже существовал и оставлен без изменений.
+    bool EnsureDefaultInputCSV(const std::filesystem::path &path = {});
 
-    // Режим работы
-    double n = 0.0;     // обороты коленвала, об/мин
-    double w = 0.0;     // угловая скорость, рад/с (если 0 — берётся из n)
-    double tau = 0.0;   // тактность (2 или 4)
-    double delta = 0.0; // степень неравномерности вращения
+    // Принудительно (пере)создаёт CSV с дефолтами (перезаписывает существующий).
+    // Возвращает полный путь созданного файла.
+    std::filesystem::path WriteDefaultInputCSV(const std::filesystem::path &path = {},
+                                               const Defaults &def = Defaults());
 
-    // Массы (удельные по площади поршня), кг/м^2
-    double m_pd = 0.0;  // масса поступательных частей
-    double m_rod = 0.0; // масса шатуна, отнесённая к Fп
-    double m_2 = 0.0;   // масса шатуна, приведённая к оси шатунной шейки и отнесённая к Fп
+    // Утилита: формирует вектор углов по настройкам.
+    std::vector<double> MakeAlphaGrid(double start_deg, double stop_deg, double step_deg);
 
-    // КШМ: размеры
-    double r = 0.0;        // радиус кривошипа, м
-    double leng_rod = 0.0; // длина шатуна, м
+} // namespace kinio
 
-    // Многокиллиндровость/компоновка (на будущее)
-    double count_cyl = 0.0; // число цилиндров
-    double gamma = 0.0;     // угол развала, рад/град — как в исходном CSV
-
-    // Коленчатый вал: шейки и щеки
-    double diam_root_neck = 0.0;   // диаметр коренной шейки, м
-    double diam_rod_neck = 0.0;    // диаметр шатунной шейки, м
-    double length_rod_neck = 0.0;  // длина шатунной шейки, м
-    double length_root_neck = 0.0; // длина коренной шейки, м
-    double depth_web = 0.0;        // толщина щеки (по Z), м
-    double fillet_rad = 0.0;       // радиус галтелей, м
-    double width_web = 0.0;        // ширина щеки (по Y), м
-    double dist_axes = 0.0;        // межосевое расстояние (если используется), м
-    double dist_web = 0.0;         // расстояние между щеками (если используется), м
-
-    // Материал и варианты конфигурации
-    double rho_material = 0.0;      // плотность материала, кг/м^3
-    double config_crankshaft = 0.0; // 1 — полноопорный, 2 — неполноопорный
-    double config_prot = 0.0;       // 1 — FullSupport_V1, 2 — FullSupport_V2, 3 — SemiSupport
-
-    // Противовесы
-    double depth_prot = 0.0; // толщина (по Z), м
-    double r_prot1 = 0.0;    // внутренний радиус, м
-    double r_prot2 = 0.0;    // внешний радиус, м
-};
-
-// Читает CSV и возвращает заполненную структуру Params.
-// Если файла нет — создаёт с дефолтами и читает их.
-Params input();
+#endif // KINEMATIC_INPUT_H

@@ -1,21 +1,22 @@
 {
+    "version": 4,
     "configurations": [
         {
-            "name": "Win32",
-            "includePath": [
-                "${workspaceFolder}/**"
-            ],
-            "defines": [
-                "_DEBUG",
-                "UNICODE",
-                "_UNICODE"
-            ],
-            "windowsSdkVersion": "10.0.26100.0",
+            "name": "windows-gcc-x64",
             "compilerPath": "C:/mingw64/bin/g++.exe",
             "cStandard": "c17",
-            "cppStandard": "c++17",
-            "intelliSenseMode": "windows-gcc-x64"
+            "cppStandard": "c++20",
+            "intelliSenseMode": "windows-gcc-x64",
+            "includePath": [
+                "${workspaceFolder}",
+                "${workspaceFolder}/input_data",
+                "${workspaceFolder}/Calculations",
+                "${workspaceFolder}/Calculations/kinematic"
+            ],
+            "defines": [
+                "UNICODE",
+                "_UNICODE"
+            ]
         }
-    ],
-    "version": 4
+    ]
 }

@@ -2,40 +2,10 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Debug (Linux, gdb)",
+      "name": "Debug kinematic (Windows, MinGW gdb)",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/build/engine",
-      "args": [],
-      "stopAtEntry": false,
-      "cwd": "${workspaceFolder}",
-      "environment": [],
-      "externalConsole": false,
-      "MIMode": "gdb",
-      "miDebuggerPath": "/usr/bin/gdb",
-      "setupCommands": [
-        { "text": "-enable-pretty-printing" }
-      ],
-      "preLaunchTask": "Build (Linux/macOS, g++)"
-    },
-    {
-      "name": "Debug (macOS, lldb)",
-      "type": "cppdbg",
-      "request": "launch",
-      "program": "${workspaceFolder}/build/engine",
-      "args": [],
-      "stopAtEntry": false,
-      "cwd": "${workspaceFolder}",
-      "externalConsole": false,
-      "MIMode": "lldb",
-      "miDebuggerPath": "/usr/bin/lldb",
-      "preLaunchTask": "Build (Linux/macOS, g++)"
-    },
-    {
-      "name": "Debug (Windows, MinGW gdb)",
-      "type": "cppdbg",
-      "request": "launch",
-      "program": "${workspaceFolder}\\build\\engine.exe",
+      "program": "${workspaceFolder}\\build\\kinematic.exe",
       "args": [],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",
@@ -43,9 +13,11 @@
       "MIMode": "gdb",
       "miDebuggerPath": "C:\\msys64\\mingw64\\bin\\gdb.exe",
       "setupCommands": [
-        { "text": "-enable-pretty-printing" }
+        {
+          "text": "-enable-pretty-printing"
+        }
       ],
-      "preLaunchTask": "Build (Windows, MSYS2 MinGW64)"
+      "preLaunchTask": "Build kinematic.exe"
     }
   ]
 }

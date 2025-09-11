@@ -1,9 +1,6 @@
 {
-  // Общие предпочтения редактора
   "editor.formatOnSave": true,
   "files.trimTrailingWhitespace": true,
-
-  // Подсветка и ассоциации для стандартных заголовков
   "files.associations": {
     "*.ipp": "cpp",
     "*.tcc": "cpp",
@@ -24,16 +21,13 @@
     "sstream": "cpp",
     "iostream": "cpp"
   },
-
-  // C/C++: стандарты и includePath на всякий случай (дублирует c_cpp_properties)
   "C_Cpp.default.cppStandard": "c++20",
   "C_Cpp.default.cStandard": "c17",
   "C_Cpp.default.includePath": [
     "${workspaceFolder}",
     "${workspaceFolder}/input_data",
-    "${workspaceFolder}/Calculations"
+    "${workspaceFolder}/Calculations",
+    "${workspaceFolder}/Calculations/kinematic"
   ],
-
-  // Терминал стартует в корне проекта (важно для относительных путей ввода/вывода)
   "terminal.integrated.cwd": "${workspaceFolder}"
 }

@@ -1,38 +1,37 @@
 {
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "label": "Build C++ project",
-            "type": "shell",
-            "command": "g++",
-            "args": [
-                "main.cpp",
-                "input_data/input.cpp",
-                "-o",
-                "main.exe",
-                "-finput-charset=UTF-8",
-                "-fexec-charset=UTF-8",
-                "-I.",
-                "-Iinput_data",
-                "-ICalculations",
-                "-g",
-                "-lgdi32",
-                "-lgdiplus",
-                "-lcomctl32",
-                "-lshell32",
-                "-lole32",
-                "-luuid",
-                "-DUNICODE",
-                "-D_UNICODE"
-            ],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "problemMatcher": [
-                "$gcc"
-            ],
-            "detail": "Компиляция всех cpp файлов в main.exe"
-        }
-    ]
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build kinematic.exe",
+      "type": "shell",
+      "command": "g++",
+      "args": [
+        "-std=c++20",
+        "-O2",
+        "-g",
+        "Calculations/kinematic/calc_kinematic.cpp",
+        "input_data/input.cpp",
+        "-I.",
+        "-Iinput_data",
+        "-ICalculations",
+        "-o",
+        "build/kinematic.exe",
+        "-DUNICODE",
+        "-D_UNICODE",
+        "-finput-charset=UTF-8",
+        "-fexec-charset=UTF-8"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [
+        "$gcc"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "detail": "Сборка только kinematic.exe"
+    }
+  ]
 }
