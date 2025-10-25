@@ -247,7 +247,7 @@ void KinematicInput::offerSaveParams(const EngineParams &params)
         case 2:
             cout << "Использовать автоматическое имя для текстового файла? (1 - ДА / 2 - НЕТ): ";
             cin >> choice;
-            if (choice == '1')
+            if (choice == '2')
             {
                 cout << "Введите имя текстового файла: ";
                 cin >> filename;
