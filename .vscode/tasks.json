@@ -9,17 +9,22 @@
         "-std=c++20",
         "-O2",
         "-g",
-        "Calculations/kinematic/calc_kinematic.cpp",
-        "input_data/input.cpp",
+        "Kinematic/Calculations/kinematic/calc_kinematic.cpp",
+        "Kinematic/input_data/kinematic_input.cpp",
+        "Kinematic/output_data/kinematic_output.cpp",
+        "common/common_types.cpp",
+        "path_manager.cpp",
         "-I.",
-        "-Iinput_data",
         "-ICalculations",
         "-o",
-        "build/kinematic.exe",
+        "kinematic.exe",
         "-DUNICODE",
         "-D_UNICODE",
         "-finput-charset=UTF-8",
-        "-fexec-charset=UTF-8"
+        "-fexec-charset=UTF-8",
+        "-static",
+        "-static-libgcc",
+        "-static-libstdc++"
       ],
       "options": {
         "cwd": "${workspaceFolder}"
@@ -31,7 +36,7 @@
         "kind": "build",
         "isDefault": true
       },
-      "detail": "Сборка только kinematic.exe"
+      "detail": "Сборка kinematic.exe"
     }
   ]
 }

@@ -8,10 +8,7 @@
             "cppStandard": "c++20",
             "intelliSenseMode": "windows-gcc-x64",
             "includePath": [
-                "${workspaceFolder}",
-                "${workspaceFolder}/input_data",
-                "${workspaceFolder}/Calculations",
-                "${workspaceFolder}/Calculations/kinematic"
+                "${workspaceFolder}"
             ],
             "defines": [
                 "UNICODE",
