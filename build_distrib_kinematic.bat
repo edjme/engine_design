@@ -6,13 +6,13 @@ echo    СОЗДАНИЕ ДИСТРИБУТИВА КИНЕМАТИКИ КШМ
 echo ========================================
 echo.
 
-if exist "Engine_Design_v1.102" (
+if exist "Engine_Design_v1.103" (
     echo Удаление старой версии...
-    rmdir /s /q "Engine_Design_v1.102"
+    rmdir /s /q "Engine_Design_v1.103"
 )
 
 echo Создание папки дистрибутива...
-mkdir "Engine_Design_v1.102"
+mkdir "Engine_Design_v1.103"
 
 echo.
 echo Компиляция программы...
@@ -24,7 +24,7 @@ Kinematic/input_data/kinematic_input.cpp ^
 Kinematic/output_data/kinematic_output.cpp ^
 common/common_types.cpp ^
 path_manager.cpp ^
--I. -ICalculations -o "Engine_Design_v1.102\Kinematic_Engine_Design_v1.102.exe" ^
+-I. -ICalculations -o "Engine_Design_v1.103\Kinematic_Engine_Design_v1.103.exe" ^
 -DUNICODE -D_UNICODE ^
 -finput-charset=UTF-8 -fexec-charset=UTF-8 ^
 -static -static-libgcc -static-libstdc++
@@ -43,54 +43,54 @@ echo Создание вспомогательных файлов...
 echo ----------------------------------
 
 :: run.bat - скрипт запуска
-echo @echo off > "Engine_Design_v1.102\run.bat"
-echo chcp 65001 ^> nul >> "Engine_Design_v1.102\run.bat"
-echo title Расчет кинематики КШМ >> "Engine_Design_v1.102\run.bat"
-echo echo ======================================== >> "Engine_Design_v1.102\run.bat"
-echo echo    ПРОГРАММА РАСЧЕТА КИНЕМАТИКИ КШМ >> "Engine_Design_v1.102\run.bat"
-echo echo ======================================== >> "Engine_Design_v1.102\run.bat"
-echo echo. >> "Engine_Design_v1.102\run.bat"
-echo echo Автоматически создаются папки: >> "Engine_Design_v1.102\run.bat"
-echo echo   - Kinematic_params   (для входных параметров) >> "Engine_Design_v1.102\run.bat"
-echo echo   - Kinematic_results  (для результатов) >> "Engine_Design_v1.102\run.bat"
-echo echo. >> "Engine_Design_v1.102\run.bat"
-echo Kinematic_Engine_Design_v1.102.exe >> "Engine_Design_v1.102\run.bat"
-echo pause >> "Engine_Design_v1.102\run.bat"
+echo @echo off > "Engine_Design_v1.103\run.bat"
+echo chcp 65001 ^> nul >> "Engine_Design_v1.103\run.bat"
+echo title Расчет кинематики КШМ >> "Engine_Design_v1.103\run.bat"
+echo echo ======================================== >> "Engine_Design_v1.103\run.bat"
+echo echo    ПРОГРАММА РАСЧЕТА КИНЕМАТИКИ КШМ >> "Engine_Design_v1.103\run.bat"
+echo echo ======================================== >> "Engine_Design_v1.103\run.bat"
+echo echo. >> "Engine_Design_v1.103\run.bat"
+echo echo Автоматически создаются папки: >> "Engine_Design_v1.103\run.bat"
+echo echo   - Kinematic_params   (для входных параметров) >> "Engine_Design_v1.103\run.bat"
+echo echo   - Kinematic_results  (для результатов) >> "Engine_Design_v1.103\run.bat"
+echo echo. >> "Engine_Design_v1.103\run.bat"
+echo Kinematic_Engine_Design_v1.103.exe >> "Engine_Design_v1.103\run.bat"
+echo pause >> "Engine_Design_v1.103\run.bat"
 echo ✓ Создан run.bat
 
 :: README.txt - расширенная инструкция
-echo ПРОГРАММА ДЛЯ РАСЧЕТА КИНЕМАТИКИ КШМ > "Engine_Design_v1.102\README.txt"
-echo Версия 1.1 >> "Engine_Design_v1.102\README.txt"
-echo. >> "Engine_Design_v1.102\README.txt"
-echo ================================= >> "Engine_Design_v1.102\README.txt"
-echo КАК ИСПОЛЬЗОВАТЬ: >> "Engine_Design_v1.102\README.txt"
-echo ================================= >> "Engine_Design_v1.102\README.txt"
-echo 1. Запустите run.bat или сразу Kinematic_Engine_Design_v1.102.exe>> "Engine_Design_v1.102\README.txt"
-echo 2. Следуйте инструкциям в программе (run.bat) или в help >> "Engine_Design_v1.102\README.txt"
-echo 3. Результаты сохранятся в папку Kinematic_results >> "Engine_Design_v1.102\README.txt"
-echo. >> "Engine_Design_v1.102\README.txt"
-echo ================================ >> "Engine_Design_v1.102\README.txt"
-echo ПОДДЕРЖИВАЕМЫЕ ТИПЫ КШМ: >> "Engine_Design_v1.102\README.txt"
-echo ================================ >> "Engine_Design_v1.102\README.txt"
-echo 1. Аксиальный КШМ >> "Engine_Design_v1.102\README.txt"
-echo 2. Дезаксиальный КШМ >> "Engine_Design_v1.102\README.txt"
-echo 3. V-образный с рядом сидящими шатунами >> "Engine_Design_v1.102\README.txt"
-echo 4. V-образный с прицепным шатуном >> "Engine_Design_v1.102\README.txt"
-echo. >> "Engine_Design_v1.102\README.txt"
-echo ================================ >> "Engine_Design_v1.102\README.txt"
-echo ФАЙЛЫ И ПАПКИ: >> "Engine_Design_v1.102\README.txt"
-echo ================================ >> "Engine_Design_v1.102\README.txt"
-echo Программа автоматически создает: >> "Engine_Design_v1.102\README.txt"
-echo - Kinematic_params/   для входных параметров >> "Engine_Design_v1.102\README.txt"
-echo - Kinematic_results/  для результатов расчетов >> "Engine_Design_v1.102\README.txt"
-echo. >> "Engine_Design_v1.102\README.txt"
-echo ================================ >> "Engine_Design_v1.102\README.txt"
-echo СИСТЕМНЫЕ ТРЕБОВАНИЯ: >> "Engine_Design_v1.102\README.txt"
-echo ================================ >> "Engine_Design_v1.102\README.txt"
-echo - Windows 10 или новее >> "Engine_Design_v1.102\README.txt"
-echo - Не требует установки дополнительных библиотек >> "Engine_Design_v1.102\README.txt"
-echo - Автономный исполняемый файл >> "Engine_Design_v1.102\README.txt"
-echo. >> "Engine_Design_v1.102\README.txt"
+echo ПРОГРАММА ДЛЯ РАСЧЕТА КИНЕМАТИКИ КШМ > "Engine_Design_v1.103\README.txt"
+echo Версия 1.1 >> "Engine_Design_v1.103\README.txt"
+echo. >> "Engine_Design_v1.103\README.txt"
+echo ================================= >> "Engine_Design_v1.103\README.txt"
+echo КАК ИСПОЛЬЗОВАТЬ: >> "Engine_Design_v1.103\README.txt"
+echo ================================= >> "Engine_Design_v1.103\README.txt"
+echo 1. Запустите run.bat или сразу Kinematic_Engine_Design_v1.103.exe>> "Engine_Design_v1.103\README.txt"
+echo 2. Следуйте инструкциям в программе (run.bat) или в help >> "Engine_Design_v1.103\README.txt"
+echo 3. Результаты сохранятся в папку Kinematic_results >> "Engine_Design_v1.103\README.txt"
+echo. >> "Engine_Design_v1.103\README.txt"
+echo ================================ >> "Engine_Design_v1.103\README.txt"
+echo ПОДДЕРЖИВАЕМЫЕ ТИПЫ КШМ: >> "Engine_Design_v1.103\README.txt"
+echo ================================ >> "Engine_Design_v1.103\README.txt"
+echo 1. Аксиальный КШМ >> "Engine_Design_v1.103\README.txt"
+echo 2. Дезаксиальный КШМ >> "Engine_Design_v1.103\README.txt"
+echo 3. V-образный с рядом сидящими шатунами >> "Engine_Design_v1.103\README.txt"
+echo 4. V-образный с прицепным шатуном >> "Engine_Design_v1.103\README.txt"
+echo. >> "Engine_Design_v1.103\README.txt"
+echo ================================ >> "Engine_Design_v1.103\README.txt"
+echo ФАЙЛЫ И ПАПКИ: >> "Engine_Design_v1.103\README.txt"
+echo ================================ >> "Engine_Design_v1.103\README.txt"
+echo Программа автоматически создает: >> "Engine_Design_v1.103\README.txt"
+echo - Kinematic_params/   для входных параметров >> "Engine_Design_v1.103\README.txt"
+echo - Kinematic_results/  для результатов расчетов >> "Engine_Design_v1.103\README.txt"
+echo. >> "Engine_Design_v1.103\README.txt"
+echo ================================ >> "Engine_Design_v1.103\README.txt"
+echo СИСТЕМНЫЕ ТРЕБОВАНИЯ: >> "Engine_Design_v1.103\README.txt"
+echo ================================ >> "Engine_Design_v1.103\README.txt"
+echo - Windows 10 или новее >> "Engine_Design_v1.103\README.txt"
+echo - Не требует установки дополнительных библиотек >> "Engine_Design_v1.103\README.txt"
+echo - Автономный исполняемый файл >> "Engine_Design_v1.103\README.txt"
+echo. >> "Engine_Design_v1.103\README.txt"
 echo ✓ Создан README.txt
 
 
@@ -99,15 +99,15 @@ echo ========================================
 echo ДИСТРИБУТИВ УСПЕШНО СОЗДАН!
 echo ========================================
 echo.
-echo Содержимое папки Engine_Design_v1.102:
+echo Содержимое папки Engine_Design_v1.103:
 echo.
-echo   📁 Engine_Design_v1.102/
-echo   ├── 🚀 Kinematic_Engine_Design_v1.102.exe     (основная программа)
+echo   📁 Engine_Design_v1.103/
+echo   ├── 🚀 Kinematic_Engine_Design_v1.103.exe     (основная программа)
 echo   ├── ⚡ run.bat           (скрипт запуска)
 echo   └── 📖 README.txt        (подробная инструкция)
 echo.
 echo КАК ИСПОЛЬЗОВАТЬ:
-echo   1. Скопируйте папку Engine_Design_v1.102
+echo   1. Скопируйте папку Engine_Design_v1.103
 echo   2. Запустите run.bat
 echo   3. Следуйте инструкциям в программе
 echo.

@@ -14,7 +14,7 @@ static void calcVTypeDeaxialKSM(const EngineParams &params, CalculationResults &
 static void calcVTypeAttachedKSM(const EngineParams &params, CalculationResults &results);
 static void calcVTypeAttachedDeaxialKSM(const EngineParams &params, CalculationResults &results);
 
-// ===== ОСНОВНАЯ ФУНКЦИЯ-РОУТЕР =====
+// ===== ОСНОВНАЯ ФУНКЦИЯ =====
 CalculationResults calcCylinderKinematics(const EngineParams &params)
 {
     CalculationResults results;
@@ -55,6 +55,7 @@ static void calcAxialKSM(const EngineParams &params, CalculationResults &results
 {
     const double pi = M_PI;
     const double DEG_TO_RAD = pi / 180.0;
+    const double RAD_TO_DEG = 180.0 / pi;
 
     const double r = params.radcrank;
     const double k = params.lyambda;            // r/L
@@ -87,7 +88,7 @@ static void calcAxialKSM(const EngineParams &params, CalculationResults &results
         results.velocity2.push_back(v2);
         results.velocity_full.push_back(vf);
 
-        // Ускорения (громоздкая точная формула)
+        // Ускорения (точная формула)
         double a1 = r * w * w * c_a;
         double a2 = r * w * w * k * std::cos(2 * a);
         // Полное через вторую производную строгого выражения смещения:
@@ -98,6 +99,20 @@ static void calcAxialKSM(const EngineParams &params, CalculationResults &results
         results.acceleration1.push_back(a1);
         results.acceleration2.push_back(a2);
         results.acceleration_full.push_back(af);
+
+        //  УГЛОВЫЕ ПЕРЕМЕЩЕНИЯ, СКОРОСТЬ И УСКОРЕНИЕ ШАТУНА
+        // Угловое перемещение шатуна
+        double betta = asin(k * s_a);
+        double betta_deg = betta * RAD_TO_DEG;
+        results.betta_rod.push_back(betta_deg);
+
+        // Угловая скорость шатуна
+        double v_rod = k * w * ((cos(a)) / sqrt(1 - k * k * s_a * s_a));
+        results.omega_rod.push_back(v_rod);
+
+        // Угловое ускорение шатуна
+        double a_rod = -k * pow(w, 2) * s_a * ((1 - k * k) / (pow((1 - k * k * s_a * s_a), 3 / 2)));
+        results.eps_rod.push_back(a_rod);
     }
 }
 
@@ -109,6 +124,7 @@ static void calcDeaxialKSM(const EngineParams &params, CalculationResults &resul
 {
     const double pi = M_PI;
     const double DEG_TO_RAD = pi / 180.0;
+    const double RAD_TO_DEG = 180.0 / pi;
 
     const double r = params.radcrank;
     const double k = params.lyambda; // r/L
@@ -153,6 +169,20 @@ static void calcDeaxialKSM(const EngineParams &params, CalculationResults &resul
         results.acceleration1.push_back(a1);
         results.acceleration2.push_back(a2);
         results.acceleration_full.push_back(af);
+
+        //  УГЛОВЫЕ ПЕРЕМЕЩЕНИЯ, СКОРОСТЬ И УСКОРЕНИЕ ШАТУНА
+        // Угловое перемещение шатуна
+        double betta = asin(k * s_a - k * z);
+        double betta_deg = betta * RAD_TO_DEG;
+        results.betta_rod.push_back(betta_deg);
+
+        // Угловая скорость шатуна
+        double v_rod = k * w * ((cos(a)) / sqrt(1 - k * k * pow(s_a - z, 2)));
+        results.omega_rod.push_back(v_rod);
+
+        // Угловое ускорение шатуна
+        double a_rod = k * pow(w, 2) * ((-s_a * (1 - pow(k, 2) * pow(s_a - z, 2)) + pow(k, 2) * pow(c_a, 2) * (s_a - z)) / pow((1 - k * k * pow(s_a - z, 2)), 3 / 2));
+        results.eps_rod.push_back(a_rod);
     }
 }
 
@@ -164,6 +194,7 @@ static void calcVTypeKSM(const EngineParams &params, CalculationResults &results
 {
     const double pi = M_PI;
     const double DEG_TO_RAD = pi / 180.0;
+    const double RAD_TO_DEG = 180.0 / pi;
 
     const double r = params.radcrank;
     const double k = params.lyambda; // r/L
@@ -204,11 +235,25 @@ static void calcVTypeKSM(const EngineParams &params, CalculationResults &results
             results.acceleration1.push_back(a1);
             results.acceleration2.push_back(a2);
             results.acceleration_full.push_back(af);
+
+            //  УГЛОВЫЕ ПЕРЕМЕЩЕНИЯ, СКОРОСТЬ И УСКОРЕНИЕ ШАТУНА
+            // Угловое перемещение шатуна
+            double betta = asin(k * s_a);
+            double betta_deg = betta * RAD_TO_DEG;
+            results.betta_rod.push_back(betta_deg);
+
+            // Угловая скорость шатуна
+            double v_rod = k * w * ((cos(a)) / sqrt(1 - k * k * s_a * s_a));
+            results.omega_rod.push_back(v_rod);
+
+            // Угловое ускорение шатуна
+            double a_rod = -k * pow(w, 2) * s_a * ((1 - k * k) / (pow((1 - k * k * s_a * s_a), 3 / 2)));
+            results.eps_rod.push_back(a_rod);
         }
 
         // ===== Боковой цилиндр (угол a - γ) =====
         {
-            double ap = a - g; //угол a - γ
+            double ap = a - g; // угол a - γ
             double s = std::sin(ap);
             double c = std::cos(ap);
             double D = std::sqrt(std::max(0.0, 1.0 - (k * s) * (k * s)));
@@ -236,6 +281,20 @@ static void calcVTypeKSM(const EngineParams &params, CalculationResults &results
             results.acceleration1_side.push_back(a1);
             results.acceleration2_side.push_back(a2);
             results.acceleration_full_side.push_back(af);
+
+            //  УГЛОВЫЕ ПЕРЕМЕЩЕНИЯ, СКОРОСТЬ И УСКОРЕНИЕ ШАТУНА
+            // Угловое перемещение шатуна
+            double betta = asin(k * s);
+            double betta_deg = betta * RAD_TO_DEG;
+            results.betta_rod_side.push_back(betta_deg);
+
+            // Угловая скорость шатуна
+            double v_rod = k * w * ((cos(a)) / sqrt(1 - k * k * s * s));
+            results.omega_rod_side.push_back(v_rod);
+
+            // Угловое ускорение шатуна
+            double a_rod = -k * pow(w, 2) * s * ((1 - k * k) / (pow((1 - k * k * s * s), 3 / 2)));
+            results.eps_rod_side.push_back(a_rod);
         }
     }
 }
@@ -248,6 +307,7 @@ static void calcVTypeDeaxialKSM(const EngineParams &params, CalculationResults &
 {
     const double pi = M_PI;
     const double DEG_TO_RAD = pi / 180.0;
+    const double RAD_TO_DEG = 180.0 / pi;
 
     const double r = params.radcrank;
     const double k = params.lyambda; // r/L
@@ -292,11 +352,25 @@ static void calcVTypeDeaxialKSM(const EngineParams &params, CalculationResults &
             results.acceleration1.push_back(a1);
             results.acceleration2.push_back(a2);
             results.acceleration_full.push_back(af);
+
+            //  УГЛОВЫЕ ПЕРЕМЕЩЕНИЯ, СКОРОСТЬ И УСКОРЕНИЕ ШАТУНА
+            // Угловое перемещение шатуна
+            double betta = asin(k * s_a - k * z);
+            double betta_deg = betta * RAD_TO_DEG;
+            results.betta_rod.push_back(betta_deg);
+
+            // Угловая скорость шатуна
+            double v_rod = k * w * ((cos(a)) / sqrt(1 - k * k * pow(s_a - z, 2)));
+            results.omega_rod.push_back(v_rod);
+
+            // Угловое ускорение шатуна
+            double a_rod = k * pow(w, 2) * ((-s_a * (1 - pow(k, 2) * pow(s_a - z, 2)) + pow(k, 2) * pow(c_a, 2) * (s_a - z)) / pow((1 - k * k * pow(s_a - z, 2)), 3 / 2));
+            results.eps_rod.push_back(a_rod);
         }
 
         // ===== Боковой цилиндр (a - γ) =====
         {
-            double ap = a - g; //угол a - γ
+            double ap = a - g; // угол a - γ
             double s = std::sin(ap);
             double c = std::cos(ap);
 
@@ -326,6 +400,20 @@ static void calcVTypeDeaxialKSM(const EngineParams &params, CalculationResults &
             results.acceleration1_side.push_back(a1);
             results.acceleration2_side.push_back(a2);
             results.acceleration_full_side.push_back(af);
+
+            //  УГЛОВЫЕ ПЕРЕМЕЩЕНИЯ, СКОРОСТЬ И УСКОРЕНИЕ ШАТУНА
+            // Угловое перемещение шатуна
+            double betta = asin(k * s - k * z);
+            double betta_deg = betta * RAD_TO_DEG;
+            results.betta_rod.push_back(betta_deg);
+
+            // Угловая скорость шатуна
+            double v_rod = k * w * ((cos(a)) / sqrt(1 - k * k * pow(s - z, 2)));
+            results.omega_rod.push_back(v_rod);
+
+            // Угловое ускорение шатуна
+            double a_rod = k * pow(w, 2) * ((-s * (1 - pow(k, 2) * pow(s - z, 2)) + pow(k, 2) * pow(c, 2) * (s - z)) / pow((1 - k * k * pow(s - z, 2)), 3 / 2));
+            results.eps_rod.push_back(a_rod);
         }
     }
 }
@@ -338,6 +426,7 @@ static void calcVTypeAttachedKSM(const EngineParams &params, CalculationResults 
 {
     const double pi = M_PI;
     const double DEG_TO_RAD = pi / 180.0;
+    const double RAD_TO_DEG = 180.0 / pi;
 
     // Главный кривошип/шатун
     const double r = params.radcrank;
@@ -388,11 +477,25 @@ static void calcVTypeAttachedKSM(const EngineParams &params, CalculationResults 
             results.acceleration1.push_back(a1);
             results.acceleration2.push_back(a2);
             results.acceleration_full.push_back(af);
+
+            //  УГЛОВЫЕ ПЕРЕМЕЩЕНИЯ, СКОРОСТЬ И УСКОРЕНИЕ ШАТУНА
+            // Угловое перемещение шатуна
+            double betta = asin(k * s_a);
+            double betta_deg = betta * RAD_TO_DEG;
+            results.betta_rod.push_back(betta_deg);
+
+            // Угловая скорость шатуна
+            double v_rod = k * w * ((cos(a)) / sqrt(1 - k * k * s_a * s_a));
+            results.omega_rod.push_back(v_rod);
+
+            // Угловое ускорение шатуна
+            double a_rod = -k * pow(w, 2) * s_a * ((1 - k * k) / (pow((1 - k * k * s_a * s_a), 3 / 2)));
+            results.eps_rod.push_back(a_rod);
         }
 
         // ===== Боковой цилиндр (прицепной) с точными производными =====
         {
-            double argS = a - g - gp; //угол a - γ - γ1
+            double argS = a - g - gp; // угол a - γ - γ1
 
             // геометрия двухшатунного сочленения
             double kPric = (L1 != 0.0) ? (r / L1) : 0.0; // отношение главного кривошипа к плечу прицепного шатуна
@@ -452,6 +555,20 @@ static void calcVTypeAttachedKSM(const EngineParams &params, CalculationResults 
             results.acceleration1_side.push_back(a1_side);
             results.acceleration2_side.push_back(a2_side);
             results.acceleration_full_side.push_back(af_side);
+
+            //  УГЛОВЫЕ ПЕРЕМЕЩЕНИЯ, СКОРОСТЬ И УСКОРЕНИЕ ШАТУНА
+            // Угловое перемещение шатуна
+            double betta = asin(kPric * sin(a - g) - delta * k * sin(a));
+            double betta_deg = betta * RAD_TO_DEG;
+            results.betta_rod_side.push_back(betta_deg);
+
+            // Угловая скорость шатуна
+            double v_rod = w * (kPric * cos(a - g) - delta * k * cos(a)) / cosB1;
+            results.omega_rod_side.push_back(v_rod);
+
+            // Угловое ускорение шатуна
+            double a_rod = (sinB1 / cosB1) * pow(v_rod, 2) + w * w * (-kPric * sin(a - g) + delta * k * sin(a));
+            results.eps_rod_side.push_back(a_rod);
         }
     }
 }
@@ -464,6 +581,7 @@ static void calcVTypeAttachedDeaxialKSM(const EngineParams &params, CalculationR
 {
     const double pi = M_PI;
     const double DEG_TO_RAD = pi / 180.0;
+    const double RAD_TO_DEG = 180.0 / pi;
 
     // Главный кривошип/шатун
     const double r = params.radcrank;
@@ -519,11 +637,25 @@ static void calcVTypeAttachedDeaxialKSM(const EngineParams &params, CalculationR
             results.acceleration1.push_back(a1);
             results.acceleration2.push_back(a2);
             results.acceleration_full.push_back(af);
+
+            //  УГЛОВЫЕ ПЕРЕМЕЩЕНИЯ, СКОРОСТЬ И УСКОРЕНИЕ ШАТУНА
+            // Угловое перемещение шатуна
+            double betta = asin(k * s_a - k * z);
+            double betta_deg = betta * RAD_TO_DEG;
+            results.betta_rod.push_back(betta_deg);
+
+            // Угловая скорость шатуна
+            double v_rod = k * w * ((cos(a)) / sqrt(1 - k * k * pow(s_a - z, 2)));
+            results.omega_rod.push_back(v_rod);
+
+            // Угловое ускорение шатуна
+            double a_rod = k * pow(w, 2) * ((-s_a * (1 - pow(k, 2) * pow(s_a - z, 2)) + pow(k, 2) * pow(c_a, 2) * (s_a - z)) / pow((1 - k * k * pow(s_a - z, 2)), 3 / 2));
+            results.eps_rod.push_back(a_rod);
         }
 
         // ===== Боковой цилиндр (прицепной) с учётом e в β1 =====
         {
-            double argS = a - g - gp;  //угол a - γ - γ1
+            double argS = a - g - gp; // угол a - γ - γ1
 
             // геометрия
             double kPric = (L1 != 0.0) ? (r / L1) : 0.0;
@@ -584,6 +716,20 @@ static void calcVTypeAttachedDeaxialKSM(const EngineParams &params, CalculationR
             results.acceleration1_side.push_back(a1_side);
             results.acceleration2_side.push_back(a2_side);
             results.acceleration_full_side.push_back(af_side);
+
+            //  УГЛОВЫЕ ПЕРЕМЕЩЕНИЯ, СКОРОСТЬ И УСКОРЕНИЕ ШАТУНА
+
+            double beta1 = std::asin(sinB1);
+            double beta1_deg = beta1 * RAD_TO_DEG;
+
+            // Угловая скорость/ускорение прицепного шатуна
+            double omega_rod = w * betap1;
+            double eps_rod = w * w * betapp1;
+
+            // Сохранение результатов
+            results.betta_rod_side.push_back(beta1_deg);
+            results.omega_rod_side.push_back(omega_rod);
+            results.eps_rod_side.push_back(eps_rod);
         }
     }
 }

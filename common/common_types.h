@@ -46,6 +46,16 @@ struct CalculationResults
     std::vector<double> acceleration_full_side;
     std::vector<double> acceleration1_side;
     std::vector<double> acceleration2_side;
+
+    // Угловые перещения, скорость, ускорение шатуна
+    std::vector<double> betta_rod;
+    std::vector<double> omega_rod;
+    std::vector<double> eps_rod;
+
+    // Для бокового цилиндра
+    std::vector<double> betta_rod_side;
+    std::vector<double> omega_rod_side;
+    std::vector<double> eps_rod_side;
 };
 
 #endif

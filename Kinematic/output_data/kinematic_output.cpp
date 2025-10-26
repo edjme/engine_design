@@ -103,15 +103,18 @@ bool KinematicOutput::saveToCSV(const CalculationResults &results,
              << "stroke_full_main[м];stroke1_main[м];stroke2_main[м];"
              << "velocity_full_main[м/с];velocity1_main[м/с];velocity2_main[м/с];"
              << "acceleration_full_main[м/с²];acceleration1_main[м/с²];acceleration2_main[м/с²];"
+             << "betta_rod_main[рад];omega_rod_main[рад/с];eps_rod_main[рад/с²];"
              << "stroke_full_side[м];stroke1_side[м];stroke2_side[м];"
              << "velocity_full_side[м/с];velocity1_side[м/с];velocity2_side[м/с];"
-             << "acceleration_full_side[м/с²];acceleration1_side[м/с²];acceleration2_side[м/с²]\n";
+             << "acceleration_full_side[м/с²];acceleration1_side[м/с²];acceleration2_side[м/с²];"
+             << "betta_rod_side[рад];omega_rod_side[рад/с];eps_rod_side[рад/с²]\n";
     }
     else
     {
         file << "alpha[град];stroke_full[м];stroke1[м];stroke2[м];"
              << "velocity_full[м/с];velocity1[м/с];velocity2[м/с];"
-             << "acceleration_full[м/с²];acceleration1[м/с²];acceleration2[м/с²]\n";
+             << "acceleration_full[м/с²];acceleration1[м/с²];acceleration2[м/с²];"
+             << "betta_rod[рад];omega_rod[рад/с];eps_rod[рад/с²]\n";
     }
 
     // Записываем данные
@@ -132,7 +135,10 @@ bool KinematicOutput::saveToCSV(const CalculationResults &results,
                  << results.velocity2[i] << ";"
                  << results.acceleration_full[i] << ";"
                  << results.acceleration1[i] << ";"
-                 << results.acceleration2[i] << ";";
+                 << results.acceleration2[i] << ";"
+                 << results.betta_rod[i] << ";"
+                 << results.omega_rod[i] << ";"
+                 << results.eps_rod[i] << ";";
 
             // Данные для бокового цилиндра
             file << results.stroke_full_side[i] << ";"
@@ -143,7 +149,10 @@ bool KinematicOutput::saveToCSV(const CalculationResults &results,
                  << results.velocity2_side[i] << ";"
                  << results.acceleration_full_side[i] << ";"
                  << results.acceleration1_side[i] << ";"
-                 << results.acceleration2_side[i];
+                 << results.acceleration2_side[i] << ";"
+                 << results.betta_rod_side[i] << ";"
+                 << results.omega_rod_side[i] << ";"
+                 << results.eps_rod_side[i];
         }
         else
         {
@@ -156,7 +165,10 @@ bool KinematicOutput::saveToCSV(const CalculationResults &results,
                  << results.velocity2[i] << ";"
                  << results.acceleration_full[i] << ";"
                  << results.acceleration1[i] << ";"
-                 << results.acceleration2[i];
+                 << results.acceleration2[i] << ";"
+                 << results.betta_rod[i] << ";"
+                 << results.omega_rod[i] << ";"
+                 << results.eps_rod[i];
         }
         file << "\n";
     }
@@ -237,6 +249,20 @@ bool KinematicOutput::saveToFormattedText(const CalculationResults &results,
     }
     file << "==================================================================================================================================\n";
 
+    file << "УГЛОВОЕ ПЕРЕМЕЩЕНИЕ, СКОРОСТЬ, УСКОРЕНИЕ:\n";
+    file << "==========================================================================\n";
+    file << "|  α [град] |   B [рад]  |   w_rod [рад/с]   |   eps_rod [рад/с²]   |\n";
+    file << "==========================================================================\n";
+
+    for (size_t i = 0; i < dataSize; ++i)
+    {
+        file << "| " << setw(9) << results.alpha[i] << " | "
+             << setw(12) << results.betta_rod[i] << " | "
+             << setw(10) << results.omega_rod[i] << " | "
+             << setw(11) << results.eps_rod[i] << " |\n";
+    }
+    file << "==================================================================================================================================\n";
+
     // Таблица для бокового цилиндра (если есть)
     if (hasSideCylinder)
     {
@@ -257,6 +283,24 @@ bool KinematicOutput::saveToFormattedText(const CalculationResults &results,
                  << setw(13) << results.acceleration_full_side[i] << " | "
                  << setw(11) << results.acceleration1_side[i] << " | "
                  << setw(11) << results.acceleration2_side[i] << " |\n";
+        }
+        file << "==================================================================================================================================\n";
+
+        file << "УГЛОВОЕ ПЕРЕМЕЩЕНИЕ, СКОРОСТЬ, УСКОРЕНИЕ:\n";
+        file << "==========================================================================\n";
+        file << "|  α [град] |   B_side [рад]  |   w_rod_side [рад/с]   |   eps_rod_side [рад/с²]   |\n";
+        file << "==========================================================================\n";
+
+        // Записываем данные с форматированием
+        file << fixed << setprecision(4);
+        size_t dataSize = results.alpha.size();
+
+        for (size_t i = 0; i < dataSize; ++i)
+        {
+            file << "| " << setw(9) << results.alpha[i] << " | "
+                 << setw(12) << results.betta_rod_side[i] << " | "
+                 << setw(10) << results.omega_rod_side[i] << " | "
+                 << setw(11) << results.eps_rod_side[i] << " |\n";
         }
         file << "==================================================================================================================================\n";
     }
@@ -318,11 +362,14 @@ bool KinematicOutput::saveSummary(const CalculationResults &results,
     if (hasSideCylinder)
     {
         file << "alpha[град];stroke_full_main[м];velocity_full_main[м/с];acceleration_full_main[м/с²];"
-             << "stroke_full_side[м];velocity_full_side[м/с];acceleration_full_side[м/с²]\n";
+             << "betta_rod_main[рад];omega_rod_main[рад/с];eps_rod_main[рад/с²];"
+             << "stroke_full_side[м];velocity_full_side[м/с];acceleration_full_side[м/с²];"
+             << "betta_rod_side[рад];omega_rod_side[рад/с];eps_rod_side[рад/с²]\n";
     }
     else
     {
-        file << "alpha[град];stroke_full[м];velocity_full[м/с];acceleration_full[м/с²]\n";
+        file << "alpha[град];stroke_full[м];velocity_full[м/с];acceleration_full[м/с²];"
+             << "betta_rod[рад];omega_rod[рад/с];eps_rod[рад/с²]\n";
     }
 
     // Записываем только основные данные
@@ -333,13 +380,19 @@ bool KinematicOutput::saveSummary(const CalculationResults &results,
         file << results.alpha[i] << ";"
              << results.stroke_full[i] << ";"
              << results.velocity_full[i] << ";"
-             << results.acceleration_full[i];
+             << results.acceleration_full[i] << ";"
+             << results.betta_rod[i] << ";"
+             << results.omega_rod[i] << ";"
+             << results.eps_rod[i];
 
         if (hasSideCylinder)
         {
             file << ";" << results.stroke_full_side[i] << ";"
                  << results.velocity_full_side[i] << ";"
-                 << results.acceleration_full_side[i];
+                 << results.acceleration_full_side[i] << ";"
+                 << results.betta_rod_side[i] << ";"
+                 << results.omega_rod_side[i] << ";"
+                 << results.eps_rod_side[i];
         }
         file << "\n";
     }
