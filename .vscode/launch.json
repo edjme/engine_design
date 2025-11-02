@@ -18,6 +18,42 @@
         }
       ],
       "preLaunchTask": "Build kinematic.exe"
+    },
+    {
+      "name": "Debug ind_diag (Windows, MinGW gdb)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}\\build\\ind_diag.exe",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "externalConsole": true,
+      "MIMode": "gdb",
+      "miDebuggerPath": "C:\\msys64\\mingw64\\bin\\gdb.exe",
+      "setupCommands": [
+        {
+          "text": "-enable-pretty-printing"
+        }
+      ],
+      "preLaunchTask": "Build ind_diag.exe"
+    },
+    {
+      "name": "Debug Palpha_Diagr (Windows, MinGW gdb)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}\\Palpha_Diag.exe",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "externalConsole": true,
+      "MIMode": "gdb",
+      "miDebuggerPath": "C:\\msys64\\mingw64\\bin\\gdb.exe",
+      "setupCommands": [
+        {
+          "text": "-enable-pretty-printing"
+        }
+      ],
+      "preLaunchTask": "Build Palpha_Diag.exe"
     }
   ]
 }

@@ -18,11 +18,11 @@ echo.
 echo Компиляция программы...
 echo -----------------------
 g++ -std=c++20 -O2 -s -mconsole ^
-Kinematic/Calculations/kinematic/main_kinematic.cpp ^
-Kinematic/Calculations/kinematic/kinematic_formulas.cpp ^
-Kinematic/input_data/kinematic_input.cpp ^
-Kinematic/output_data/kinematic_output.cpp ^
-common/common_types.cpp ^
+core/Kinematic/Calculations/kinematic/main_kinematic.cpp ^
+core/Kinematic/Calculations/kinematic/kinematic_formulas.cpp ^
+core/Kinematic/input_data/kinematic_input.cpp ^
+core/Kinematic/output_data/kinematic_output.cpp ^
+core/common/common_types.cpp ^
 path_manager.cpp ^
 -I. -ICalculations -o "Engine_Design_v1.103\Kinematic_Engine_Design_v1.103.exe" ^
 -DUNICODE -D_UNICODE ^
