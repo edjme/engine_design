@@ -1,6 +1,7 @@
 {
   "editor.formatOnSave": true,
   "files.trimTrailingWhitespace": true,
+  "cmake.configureOnOpen": true,
   "files.associations": {
     "*.ipp": "cpp",
     "*.tcc": "cpp",
@@ -70,5 +71,19 @@
     "${workspaceFolder}/Calculations",
     "${workspaceFolder}/Calculations/kinematic"
   ],
-  "terminal.integrated.cwd": "${workspaceFolder}"
+  "terminal.integrated.cwd": "${workspaceFolder}",
+  "terminal.integrated.profiles.windows": {
+    "MINGW64": {
+      "path": "C:\\msys64\\usr\\bin\\bash.exe",
+      "args": [
+        "--login",
+        "-i"
+      ],
+      "env": {
+        "MSYSTEM": "MINGW64"
+      },
+      "icon": "terminal-bash"
+    }
+  },
+  "terminal.integrated.defaultProfile.windows": "MINGW64"
 }

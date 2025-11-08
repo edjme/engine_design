@@ -1,0 +1,3 @@
+C:\msys64\mingw64\bin\cmake.exe -E rm -f CMakeFiles\ind_diag.dir/objects.a
+C:\msys64\mingw64\bin\ar.exe qc CMakeFiles\ind_diag.dir/objects.a @CMakeFiles\ind_diag.dir\objects1.rsp
+C:\msys64\mingw64\bin\g++.exe -g -Wl,--whole-archive CMakeFiles\ind_diag.dir/objects.a -Wl,--no-whole-archive -o ind_diag.exe -Wl,--out-implib,libind_diag.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\ind_diag.dir\linkLibs.rsp

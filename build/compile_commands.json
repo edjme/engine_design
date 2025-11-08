@@ -1,0 +1,122 @@
+[
+{
+  "directory": "C:/Users/aleks/Documents/progs/engine_design/build",
+  "command": "C:\\msys64\\mingw64\\bin\\g++.exe -DUNICODE -DWXUSINGDLL -D_UNICODE -D__WXMSW__ @CMakeFiles/kinematic.dir/includes_CXX.rsp -g -std=gnu++20 -Wall -Wextra -Wpedantic -o CMakeFiles\\kinematic.dir\\core\\Kinematic\\Calculations\\main_kinematic.cpp.obj -c C:\\Users\\aleks\\Documents\\progs\\engine_design\\core\\Kinematic\\Calculations\\main_kinematic.cpp",
+  "file": "C:/Users/aleks/Documents/progs/engine_design/core/Kinematic/Calculations/main_kinematic.cpp",
+  "output": "CMakeFiles/kinematic.dir/core/Kinematic/Calculations/main_kinematic.cpp.obj"
+},
+{
+  "directory": "C:/Users/aleks/Documents/progs/engine_design/build",
+  "command": "C:\\msys64\\mingw64\\bin\\g++.exe -DUNICODE -DWXUSINGDLL -D_UNICODE -D__WXMSW__ @CMakeFiles/kinematic.dir/includes_CXX.rsp -g -std=gnu++20 -Wall -Wextra -Wpedantic -o CMakeFiles\\kinematic.dir\\core\\Kinematic\\input_data\\kinematic_input.cpp.obj -c C:\\Users\\aleks\\Documents\\progs\\engine_design\\core\\Kinematic\\input_data\\kinematic_input.cpp",
+  "file": "C:/Users/aleks/Documents/progs/engine_design/core/Kinematic/input_data/kinematic_input.cpp",
+  "output": "CMakeFiles/kinematic.dir/core/Kinematic/input_data/kinematic_input.cpp.obj"
+},
+{
+  "directory": "C:/Users/aleks/Documents/progs/engine_design/build",
+  "command": "C:\\msys64\\mingw64\\bin\\g++.exe -DUNICODE -DWXUSINGDLL -D_UNICODE -D__WXMSW__ @CMakeFiles/kinematic.dir/includes_CXX.rsp -g -std=gnu++20 -Wall -Wextra -Wpedantic -o CMakeFiles\\kinematic.dir\\core\\Kinematic\\output_data\\kinematic_output.cpp.obj -c C:\\Users\\aleks\\Documents\\progs\\engine_design\\core\\Kinematic\\output_data\\kinematic_output.cpp",
+  "file": "C:/Users/aleks/Documents/progs/engine_design/core/Kinematic/output_data/kinematic_output.cpp",
+  "output": "CMakeFiles/kinematic.dir/core/Kinematic/output_data/kinematic_output.cpp.obj"
+},
+{
+  "directory": "C:/Users/aleks/Documents/progs/engine_design/build",
+  "command": "C:\\msys64\\mingw64\\bin\\g++.exe -DUNICODE -DWXUSINGDLL -D_UNICODE -D__WXMSW__ @CMakeFiles/kinematic.dir/includes_CXX.rsp -g -std=gnu++20 -Wall -Wextra -Wpedantic -o CMakeFiles\\kinematic.dir\\core\\Kinematic\\Calculations\\kinematic_formulas.cpp.obj -c C:\\Users\\aleks\\Documents\\progs\\engine_design\\core\\Kinematic\\Calculations\\kinematic_formulas.cpp",
+  "file": "C:/Users/aleks/Documents/progs/engine_design/core/Kinematic/Calculations/kinematic_formulas.cpp",
+  "output": "CMakeFiles/kinematic.dir/core/Kinematic/Calculations/kinematic_formulas.cpp.obj"
+},
+{
+  "directory": "C:/Users/aleks/Documents/progs/engine_design/build",
+  "command": "C:\\msys64\\mingw64\\bin\\g++.exe -DUNICODE -DWXUSINGDLL -D_UNICODE -D__WXMSW__ @CMakeFiles/kinematic.dir/includes_CXX.rsp -g -std=gnu++20 -Wall -Wextra -Wpedantic -o CMakeFiles\\kinematic.dir\\core\\common\\common_types.cpp.obj -c C:\\Users\\aleks\\Documents\\progs\\engine_design\\core\\common\\common_types.cpp",
+  "file": "C:/Users/aleks/Documents/progs/engine_design/core/common/common_types.cpp",
+  "output": "CMakeFiles/kinematic.dir/core/common/common_types.cpp.obj"
+},
+{
+  "directory": "C:/Users/aleks/Documents/progs/engine_design/build",
+  "command": "C:\\msys64\\mingw64\\bin\\g++.exe -DUNICODE -DWXUSINGDLL -D_UNICODE -D__WXMSW__ @CMakeFiles/kinematic.dir/includes_CXX.rsp -g -std=gnu++20 -Wall -Wextra -Wpedantic -o CMakeFiles\\kinematic.dir\\path_manager.cpp.obj -c C:\\Users\\aleks\\Documents\\progs\\engine_design\\path_manager.cpp",
+  "file": "C:/Users/aleks/Documents/progs/engine_design/path_manager.cpp",
+  "output": "CMakeFiles/kinematic.dir/path_manager.cpp.obj"
+},
+{
+  "directory": "C:/Users/aleks/Documents/progs/engine_design/build",
+  "command": "C:\\msys64\\mingw64\\bin\\g++.exe -DUNICODE -DWXUSINGDLL -D_UNICODE -D__WXMSW__ @CMakeFiles/ind_diag.dir/includes_CXX.rsp -g -std=gnu++20 -Wall -Wextra -Wpedantic -o CMakeFiles\\ind_diag.dir\\core\\IND_Diagr\\calculations\\ind_diagr_main.cpp.obj -c C:\\Users\\aleks\\Documents\\progs\\engine_design\\core\\IND_Diagr\\calculations\\ind_diagr_main.cpp",
+  "file": "C:/Users/aleks/Documents/progs/engine_design/core/IND_Diagr/calculations/ind_diagr_main.cpp",
+  "output": "CMakeFiles/ind_diag.dir/core/IND_Diagr/calculations/ind_diagr_main.cpp.obj"
+},
+{
+  "directory": "C:/Users/aleks/Documents/progs/engine_design/build",
+  "command": "C:\\msys64\\mingw64\\bin\\g++.exe -DUNICODE -DWXUSINGDLL -D_UNICODE -D__WXMSW__ @CMakeFiles/ind_diag.dir/includes_CXX.rsp -g -std=gnu++20 -Wall -Wextra -Wpedantic -o CMakeFiles\\ind_diag.dir\\core\\IND_Diagr\\input_data\\ind_diag_input.cpp.obj -c C:\\Users\\aleks\\Documents\\progs\\engine_design\\core\\IND_Diagr\\input_data\\ind_diag_input.cpp",
+  "file": "C:/Users/aleks/Documents/progs/engine_design/core/IND_Diagr/input_data/ind_diag_input.cpp",
+  "output": "CMakeFiles/ind_diag.dir/core/IND_Diagr/input_data/ind_diag_input.cpp.obj"
+},
+{
+  "directory": "C:/Users/aleks/Documents/progs/engine_design/build",
+  "command": "C:\\msys64\\mingw64\\bin\\g++.exe -DUNICODE -DWXUSINGDLL -D_UNICODE -D__WXMSW__ @CMakeFiles/ind_diag.dir/includes_CXX.rsp -g -std=gnu++20 -Wall -Wextra -Wpedantic -o CMakeFiles\\ind_diag.dir\\core\\IND_Diagr\\output_data\\ind_diag_output.cpp.obj -c C:\\Users\\aleks\\Documents\\progs\\engine_design\\core\\IND_Diagr\\output_data\\ind_diag_output.cpp",
+  "file": "C:/Users/aleks/Documents/progs/engine_design/core/IND_Diagr/output_data/ind_diag_output.cpp",
+  "output": "CMakeFiles/ind_diag.dir/core/IND_Diagr/output_data/ind_diag_output.cpp.obj"
+},
+{
+  "directory": "C:/Users/aleks/Documents/progs/engine_design/build",
+  "command": "C:\\msys64\\mingw64\\bin\\g++.exe -DUNICODE -DWXUSINGDLL -D_UNICODE -D__WXMSW__ @CMakeFiles/ind_diag.dir/includes_CXX.rsp -g -std=gnu++20 -Wall -Wextra -Wpedantic -o CMakeFiles\\ind_diag.dir\\core\\IND_Diagr\\calculations\\calc_ind_diagr.cpp.obj -c C:\\Users\\aleks\\Documents\\progs\\engine_design\\core\\IND_Diagr\\calculations\\calc_ind_diagr.cpp",
+  "file": "C:/Users/aleks/Documents/progs/engine_design/core/IND_Diagr/calculations/calc_ind_diagr.cpp",
+  "output": "CMakeFiles/ind_diag.dir/core/IND_Diagr/calculations/calc_ind_diagr.cpp.obj"
+},
+{
+  "directory": "C:/Users/aleks/Documents/progs/engine_design/build",
+  "command": "C:\\msys64\\mingw64\\bin\\g++.exe -DUNICODE -DWXUSINGDLL -D_UNICODE -D__WXMSW__ @CMakeFiles/ind_diag.dir/includes_CXX.rsp -g -std=gnu++20 -Wall -Wextra -Wpedantic -o CMakeFiles\\ind_diag.dir\\core\\common\\ind_diag_common_types.cpp.obj -c C:\\Users\\aleks\\Documents\\progs\\engine_design\\core\\common\\ind_diag_common_types.cpp",
+  "file": "C:/Users/aleks/Documents/progs/engine_design/core/common/ind_diag_common_types.cpp",
+  "output": "CMakeFiles/ind_diag.dir/core/common/ind_diag_common_types.cpp.obj"
+},
+{
+  "directory": "C:/Users/aleks/Documents/progs/engine_design/build",
+  "command": "C:\\msys64\\mingw64\\bin\\g++.exe -DUNICODE -DWXUSINGDLL -D_UNICODE -D__WXMSW__ @CMakeFiles/ind_diag.dir/includes_CXX.rsp -g -std=gnu++20 -Wall -Wextra -Wpedantic -o CMakeFiles\\ind_diag.dir\\ind_path_manager.cpp.obj -c C:\\Users\\aleks\\Documents\\progs\\engine_design\\ind_path_manager.cpp",
+  "file": "C:/Users/aleks/Documents/progs/engine_design/ind_path_manager.cpp",
+  "output": "CMakeFiles/ind_diag.dir/ind_path_manager.cpp.obj"
+},
+{
+  "directory": "C:/Users/aleks/Documents/progs/engine_design/build",
+  "command": "C:\\msys64\\mingw64\\bin\\g++.exe -DUNICODE -DWXUSINGDLL -D_UNICODE -D__WXMSW__ @CMakeFiles/Palpha_Diag.dir/includes_CXX.rsp -g -std=gnu++20 -Wall -Wextra -Wpedantic -o CMakeFiles\\Palpha_Diag.dir\\core\\Diag_Palpha\\Calculations\\main_Palpha.cpp.obj -c C:\\Users\\aleks\\Documents\\progs\\engine_design\\core\\Diag_Palpha\\Calculations\\main_Palpha.cpp",
+  "file": "C:/Users/aleks/Documents/progs/engine_design/core/Diag_Palpha/Calculations/main_Palpha.cpp",
+  "output": "CMakeFiles/Palpha_Diag.dir/core/Diag_Palpha/Calculations/main_Palpha.cpp.obj"
+},
+{
+  "directory": "C:/Users/aleks/Documents/progs/engine_design/build",
+  "command": "C:\\msys64\\mingw64\\bin\\g++.exe -DUNICODE -DWXUSINGDLL -D_UNICODE -D__WXMSW__ @CMakeFiles/Palpha_Diag.dir/includes_CXX.rsp -g -std=gnu++20 -Wall -Wextra -Wpedantic -o CMakeFiles\\Palpha_Diag.dir\\core\\Diag_Palpha\\Input_data\\Palpha_input.cpp.obj -c C:\\Users\\aleks\\Documents\\progs\\engine_design\\core\\Diag_Palpha\\Input_data\\Palpha_input.cpp",
+  "file": "C:/Users/aleks/Documents/progs/engine_design/core/Diag_Palpha/Input_data/Palpha_input.cpp",
+  "output": "CMakeFiles/Palpha_Diag.dir/core/Diag_Palpha/Input_data/Palpha_input.cpp.obj"
+},
+{
+  "directory": "C:/Users/aleks/Documents/progs/engine_design/build",
+  "command": "C:\\msys64\\mingw64\\bin\\g++.exe -DUNICODE -DWXUSINGDLL -D_UNICODE -D__WXMSW__ @CMakeFiles/Palpha_Diag.dir/includes_CXX.rsp -g -std=gnu++20 -Wall -Wextra -Wpedantic -o CMakeFiles\\Palpha_Diag.dir\\core\\Diag_Palpha\\Output_data\\Palpha_output.cpp.obj -c C:\\Users\\aleks\\Documents\\progs\\engine_design\\core\\Diag_Palpha\\Output_data\\Palpha_output.cpp",
+  "file": "C:/Users/aleks/Documents/progs/engine_design/core/Diag_Palpha/Output_data/Palpha_output.cpp",
+  "output": "CMakeFiles/Palpha_Diag.dir/core/Diag_Palpha/Output_data/Palpha_output.cpp.obj"
+},
+{
+  "directory": "C:/Users/aleks/Documents/progs/engine_design/build",
+  "command": "C:\\msys64\\mingw64\\bin\\g++.exe -DUNICODE -DWXUSINGDLL -D_UNICODE -D__WXMSW__ @CMakeFiles/Palpha_Diag.dir/includes_CXX.rsp -g -std=gnu++20 -Wall -Wextra -Wpedantic -o CMakeFiles\\Palpha_Diag.dir\\core\\Diag_Palpha\\Calculations\\calc_Palpha.cpp.obj -c C:\\Users\\aleks\\Documents\\progs\\engine_design\\core\\Diag_Palpha\\Calculations\\calc_Palpha.cpp",
+  "file": "C:/Users/aleks/Documents/progs/engine_design/core/Diag_Palpha/Calculations/calc_Palpha.cpp",
+  "output": "CMakeFiles/Palpha_Diag.dir/core/Diag_Palpha/Calculations/calc_Palpha.cpp.obj"
+},
+{
+  "directory": "C:/Users/aleks/Documents/progs/engine_design/build",
+  "command": "C:\\msys64\\mingw64\\bin\\g++.exe -DUNICODE -DWXUSINGDLL -D_UNICODE -D__WXMSW__ @CMakeFiles/Palpha_Diag.dir/includes_CXX.rsp -g -std=gnu++20 -Wall -Wextra -Wpedantic -o CMakeFiles\\Palpha_Diag.dir\\core\\common\\common_types.cpp.obj -c C:\\Users\\aleks\\Documents\\progs\\engine_design\\core\\common\\common_types.cpp",
+  "file": "C:/Users/aleks/Documents/progs/engine_design/core/common/common_types.cpp",
+  "output": "CMakeFiles/Palpha_Diag.dir/core/common/common_types.cpp.obj"
+},
+{
+  "directory": "C:/Users/aleks/Documents/progs/engine_design/build",
+  "command": "C:\\msys64\\mingw64\\bin\\g++.exe -DUNICODE -DWXUSINGDLL -D_UNICODE -D__WXMSW__ @CMakeFiles/Palpha_Diag.dir/includes_CXX.rsp -g -std=gnu++20 -Wall -Wextra -Wpedantic -o CMakeFiles\\Palpha_Diag.dir\\ind_Palpha_path_manager.cpp.obj -c C:\\Users\\aleks\\Documents\\progs\\engine_design\\ind_Palpha_path_manager.cpp",
+  "file": "C:/Users/aleks/Documents/progs/engine_design/ind_Palpha_path_manager.cpp",
+  "output": "CMakeFiles/Palpha_Diag.dir/ind_Palpha_path_manager.cpp.obj"
+},
+{
+  "directory": "C:/Users/aleks/Documents/progs/engine_design/build",
+  "command": "C:\\msys64\\mingw64\\bin\\g++.exe -DUNICODE -DWXUSINGDLL -D_UNICODE -D__WXMSW__ @CMakeFiles/wx_app.dir/includes_CXX.rsp -g -std=gnu++20 -Wall -Wextra -Wpedantic -o CMakeFiles\\wx_app.dir\\gui_wx\\gui_main.cpp.obj -c C:\\Users\\aleks\\Documents\\progs\\engine_design\\gui_wx\\gui_main.cpp",
+  "file": "C:/Users/aleks/Documents/progs/engine_design/gui_wx/gui_main.cpp",
+  "output": "CMakeFiles/wx_app.dir/gui_wx/gui_main.cpp.obj"
+},
+{
+  "directory": "C:/Users/aleks/Documents/progs/engine_design/build",
+  "command": "C:\\msys64\\mingw64\\bin\\g++.exe -DUNICODE -DWXUSINGDLL -D_UNICODE -D__WXMSW__ @CMakeFiles/kinematic_gui.dir/includes_CXX.rsp -g -std=gnu++20 -Wall -Wextra -Wpedantic -o CMakeFiles\\kinematic_gui.dir\\gui_wx\\kinematic_gui.cpp.obj -c C:\\Users\\aleks\\Documents\\progs\\engine_design\\gui_wx\\kinematic_gui.cpp",
+  "file": "C:/Users/aleks/Documents/progs/engine_design/gui_wx/kinematic_gui.cpp",
+  "output": "CMakeFiles/kinematic_gui.dir/gui_wx/kinematic_gui.cpp.obj"
+}
+]

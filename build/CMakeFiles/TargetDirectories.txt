@@ -1,0 +1,7 @@
+C:/Users/aleks/Documents/progs/engine_design/build/CMakeFiles/kinematic.dir
+C:/Users/aleks/Documents/progs/engine_design/build/CMakeFiles/ind_diag.dir
+C:/Users/aleks/Documents/progs/engine_design/build/CMakeFiles/Palpha_Diag.dir
+C:/Users/aleks/Documents/progs/engine_design/build/CMakeFiles/wx_app.dir
+C:/Users/aleks/Documents/progs/engine_design/build/CMakeFiles/kinematic_gui.dir
+C:/Users/aleks/Documents/progs/engine_design/build/CMakeFiles/edit_cache.dir
+C:/Users/aleks/Documents/progs/engine_design/build/CMakeFiles/rebuild_cache.dir

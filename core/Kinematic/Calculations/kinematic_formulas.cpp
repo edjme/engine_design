@@ -1,5 +1,6 @@
 // kinematic_formulas.cpp
 #include "kinematic_formulas.h"
+#define _USE_MATH_DEFINES
 #include <cmath>
 #include <algorithm>
 #include <iostream>
@@ -44,7 +45,6 @@ CalculationResults calcCylinderKinematics(const EngineParams &params)
 }
 
 // ===== ВСПОМОГАТЕЛЬНЫЕ МЕЛОЧИ =====
-const double M_PI = 3.14159265358979323846;
 static inline double deg2rad(double deg) { return deg * M_PI / 180.0; }
 
 // =====================================================================
