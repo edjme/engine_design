@@ -1,0 +1,17 @@
+C:\Users\aleks\Documents\progs\engine_design\core\Diag_Palpha\Calculations\calc_Palpha.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\calc_Palpha.obj
+C:\Users\aleks\Documents\progs\engine_design\core\Diag_Palpha\Input_data\Palpha_input.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\Palpha_input.obj
+C:\Users\aleks\Documents\progs\engine_design\core\Diag_Palpha\Output_data\Palpha_output.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\Palpha_output.obj
+C:\Users\aleks\Documents\progs\engine_design\core\Dynamic\calc_dynamic\calc_dynamic.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\calc_dynamic.obj
+C:\Users\aleks\Documents\progs\engine_design\core\Dynamic\input_data\dynamic_input.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\dynamic_input.obj
+C:\Users\aleks\Documents\progs\engine_design\core\Dynamic\output_data\dynamic_output.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\dynamic_output.obj
+C:\Users\aleks\Documents\progs\engine_design\core\IND_Diagr\calculations\calc_ind_diagr.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\calc_ind_diagr.obj
+C:\Users\aleks\Documents\progs\engine_design\core\IND_Diagr\input_data\ind_diag_input.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\ind_diag_input.obj
+C:\Users\aleks\Documents\progs\engine_design\core\IND_Diagr\output_data\ind_diag_output.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\ind_diag_output.obj
+C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\kinematic_formulas.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\kinematic_formulas.obj
+C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\input_data\kinematic_input.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\kinematic_input.obj
+C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\output_data\kinematic_output.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\kinematic_output.obj
+C:\Users\aleks\Documents\progs\engine_design\core\common\common_types.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\common_types.obj
+C:\Users\aleks\Documents\progs\engine_design\core\common\ind_diag_common_types.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\ind_diag_common_types.obj
+C:\Users\aleks\Documents\progs\engine_design\path_manager.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\path_manager.obj
+C:\Users\aleks\Documents\progs\engine_design\ind_path_manager.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\ind_path_manager.obj
+C:\Users\aleks\Documents\progs\engine_design\ind_Palpha_path_manager.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\ind_Palpha_path_manager.obj

@@ -1,3 +1,0 @@
-C:\msys64\mingw64\bin\cmake.exe -E rm -f CMakeFiles\Palpha_Diag.dir/objects.a
-C:\msys64\mingw64\bin\ar.exe qc CMakeFiles\Palpha_Diag.dir/objects.a @CMakeFiles\Palpha_Diag.dir\objects1.rsp
-C:\msys64\mingw64\bin\g++.exe -g -Wl,--whole-archive CMakeFiles\Palpha_Diag.dir/objects.a -Wl,--no-whole-archive -o Palpha_Diag.exe -Wl,--out-implib,libPalpha_Diag.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\Palpha_Diag.dir\linkLibs.rsp

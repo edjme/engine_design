@@ -240,7 +240,7 @@ IndicatorResults build_indicator_PV(const IndParams &p,
         V.reserve(N);
         P.reserve(N);
     };
-    const int N = std::max(8, samples_per_segment);
+    const int N = max(8, samples_per_segment);
 
     // 3) Гладкие участки
     // a -> c (сжатие)
