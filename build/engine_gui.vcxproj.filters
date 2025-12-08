@@ -7,9 +7,15 @@
     <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\gui\MainFrame.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\gui\KinematicPlotPanel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="C:\Users\aleks\Documents\progs\engine_design\gui\MainFrame.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\aleks\Documents\progs\engine_design\gui\KinematicPlotPanel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

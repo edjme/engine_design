@@ -428,6 +428,8 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\gui\main_gui.cpp" />
     <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\gui\MainFrame.cpp" />
     <ClInclude Include="C:\Users\aleks\Documents\progs\engine_design\gui\MainFrame.h" />
+    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\gui\KinematicPlotPanel.cpp" />
+    <ClInclude Include="C:\Users\aleks\Documents\progs\engine_design\gui\KinematicPlotPanel.h" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>

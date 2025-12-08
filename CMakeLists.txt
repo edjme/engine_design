@@ -43,6 +43,8 @@ add_executable(engine_gui WIN32
     gui/main_gui.cpp
     gui/MainFrame.cpp
     gui/MainFrame.h
+    gui/KinematicPlotPanel.cpp
+    gui/KinematicPlotPanel.h
 )
 
 target_link_libraries(engine_gui PRIVATE

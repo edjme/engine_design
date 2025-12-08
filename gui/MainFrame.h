@@ -1,37 +1,101 @@
 #pragma once
 
 #include <wx/wx.h>
-#include <wx/notebook.h>
+#include <wx/simplebook.h>
+#include <wx/choice.h>
+#include <wx/button.h>
+#include <wx/statline.h>
 
 #include "core/common/common_types.h"
 #include "core/Kinematic/Calculations/kinematic_formulas.h"
 #include "core/Kinematic/output_data/kinematic_output.h"
+#include "KinematicPlotPanel.h"
 
-// Тестовый GUI для расчёта кинематики КШМ
+// Типы КШМ
+enum class KSMType
+{
+    Axial = 0,
+    Deaxial,
+    VShaped,
+    VShapedDeaxial,
+    VShapedAttached,
+    VShapedAttachedDeaxial
+};
+
 class MainFrame : public wxFrame
 {
 public:
     explicit MainFrame(const wxString& title);
 
 private:
-    // Поля ввода
-    wxTextCtrl*   m_stepAlphaInput;   // шаг α
-    wxTextCtrl*   m_endAlphaInput;    // предел α
-    wxTextCtrl*   m_radcrankInput;    // радиус кривошипа
-    wxTextCtrl*   m_lambdaInput;      // λ
-    wxTextCtrl*   m_nInput;           // n, об/мин
-
-    // Вывод статуса/результатов
-    wxTextCtrl*   m_resultBox;
-
-    // Последний расчёт (для сохранения)
-    EngineParams       m_lastParams;
-    CalculationResults m_lastResults;
+    // --- общие данные расчёта ---
+    EngineParams       m_lastParams{};
+    CalculationResults m_lastResults{};
     bool               m_hasResults = false;
+    KSMType            m_currentType = KSMType::Axial;
 
-    // Обработчики
-    void OnCalculate(wxCommandEvent& event);
-    void OnSaveCsv(wxCommandEvent& event);
+    // --- левая панель (меню) ---
+    wxPanel*  m_sidebarPanel   = nullptr;
+    wxButton* m_btnKinematic   = nullptr;
+    wxButton* m_btnDynamic     = nullptr;
+
+    // --- правая колонка: книжка разделов ---
+    wxSimplebook* m_rightBook = nullptr; // 0 - кинематика, 1 - динамика
+
+    // --- раздел "Кинематика": книжка (ввод / результат) ---
+    wxSimplebook* m_kinematicBook = nullptr; // 0 - ввод, 1 - результат
+
+    // страница ввода
+    wxPanel*     m_kinInputPanel  = nullptr;
+    wxChoice*    m_ksmTypeChoice  = nullptr;
+
+    wxTextCtrl*  m_stepAlphaInput = nullptr;
+    wxTextCtrl*  m_endAlphaInput  = nullptr;
+    wxTextCtrl*  m_radcrankInput  = nullptr;
+    wxTextCtrl*  m_lambdaInput    = nullptr;
+    wxTextCtrl*  m_nInput         = nullptr;
+
+    wxStaticText* m_gammaLabel     = nullptr;
+    wxTextCtrl*   m_gammaInput     = nullptr;
+    wxStaticText* m_dezaxLabel     = nullptr;
+    wxTextCtrl*   m_dezaxInput     = nullptr;
+    wxStaticText* m_gammaPricLabel = nullptr;
+    wxTextCtrl*   m_gammaPricInput = nullptr;
+    wxStaticText* m_radcrank1Label = nullptr;
+    wxTextCtrl*   m_radcrank1Input = nullptr;
+    wxStaticText* m_lengthRod1Label = nullptr;
+    wxTextCtrl*   m_lengthRod1Input = nullptr;
+
+    wxButton*    m_calcButton     = nullptr;
+
+    // страница результата
+    wxPanel*            m_kinResultPanel  = nullptr;
+    wxStaticText*       m_resultStatus    = nullptr;
+    wxChoice*           m_graphTypeChoice = nullptr;
+    KinematicPlotPanel* m_plotPanel       = nullptr;
+    wxButton*           m_backButton      = nullptr;
+    wxButton*           m_saveButton      = nullptr;
+
+    // --- построение интерфейса ---
+    void BuildLayout();
+    void BuildSidebar(wxPanel* parent);
+    void BuildKinematicPages(wxPanel* parent);
+
+    void ApplyDarkTheme(wxWindow* w);
+
+    void UpdateKSMTypeFromChoice();
+    void UpdateParameterVisibility();
+    bool ReadParamsFromUI(EngineParams& outParams, wxString& errorMessage);
+
+    // --- обработчики событий ---
+    void OnSidebarKinematic(wxCommandEvent& evt);
+    void OnSidebarDynamic(wxCommandEvent& evt);
+
+    void OnKSMTypeChanged(wxCommandEvent& evt);
+    void OnCalculate(wxCommandEvent& evt);
+    void OnGraphTypeChanged(wxCommandEvent& evt);
+    void OnBackToInput(wxCommandEvent& evt);
+    void OnSaveCsv(wxCommandEvent& evt);
 
     wxDECLARE_EVENT_TABLE();
 };
