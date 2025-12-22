@@ -2,10 +2,10 @@
 	"artifacts" : 
 	[
 		{
-			"path" : "MinSizeRel/engine_gui.exe"
+			"path" : "Release/engine_gui.exe"
 		},
 		{
-			"path" : "MinSizeRel/engine_gui.pdb"
+			"path" : "Release/engine_gui.pdb"
 		}
 	],
 	"backtrace" : 2,
@@ -129,7 +129,7 @@
 			"compileCommandFragments" : 
 			[
 				{
-					"fragment" : "/DWIN32 /D_WINDOWS /GR /EHsc /O1 /Ob1 /DNDEBUG -std:c++17 -MD"
+					"fragment" : "/DWIN32 /D_WINDOWS /GR /EHsc /O2 /Ob2 /DNDEBUG -std:c++17 -MD"
 				}
 			],
 			"defines" : 
@@ -192,11 +192,11 @@
 	"dependencies" : 
 	[
 		{
-			"backtrace" : 3,
-			"id" : "engine_core::@6890427a1f51a3e7e1df"
+			"id" : "ZERO_CHECK::@6890427a1f51a3e7e1df"
 		},
 		{
-			"id" : "ZERO_CHECK::@6890427a1f51a3e7e1df"
+			"backtrace" : 3,
+			"id" : "engine_core::@6890427a1f51a3e7e1df"
 		}
 	],
 	"id" : "engine_gui::@6890427a1f51a3e7e1df",
@@ -205,7 +205,7 @@
 		"commandFragments" : 
 		[
 			{
-				"fragment" : "/DWIN32 /D_WINDOWS /GR /EHsc /O1 /Ob1 /DNDEBUG -MD",
+				"fragment" : "/DWIN32 /D_WINDOWS /GR /EHsc /O2 /Ob2 /DNDEBUG -MD",
 				"role" : "flags"
 			},
 			{
@@ -218,7 +218,7 @@
 			},
 			{
 				"backtrace" : 3,
-				"fragment" : "MinSizeRel\\engine_core.lib",
+				"fragment" : "Release\\engine_core.lib",
 				"role" : "libraries"
 			},
 			{

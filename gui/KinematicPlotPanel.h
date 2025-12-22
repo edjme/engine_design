@@ -12,7 +12,10 @@ public:
     {
         Displacement, // перемещение
         Velocity,     // скорость
-        Acceleration  // ускорение
+        Acceleration,  // ускорение
+        DisplacementSide, // перемещение в боковом цилиндре
+        VelocitySide, // скорость в боковом цилиндре
+        AccelerationSide // ускорение в боковом цилиндре
     };
 
     explicit KinematicPlotPanel(wxWindow* parent);

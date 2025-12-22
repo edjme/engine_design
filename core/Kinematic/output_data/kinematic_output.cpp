@@ -429,7 +429,7 @@ void KinematicOutput::exportWithMenu(const CalculationResults &results,
         cout << "Использовать автоматическое имя для CSV? (1 - ДА / 2 - НЕТ): ";
         char answer;
         cin >> answer;
-        if (answer == 'n')
+        if (answer == '2')
         {
             cout << "Введите имя CSV файла: ";
             cin >> filename;

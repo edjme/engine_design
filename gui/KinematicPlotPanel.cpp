@@ -72,7 +72,7 @@ void KinematicPlotPanel::DrawAxes(wxDC& dc, const wxRect& rect)
 
     // Подпись оси X
     dc.DrawText(
-        wxString::FromUTF8("угол поворота коленвала, градусы"),
+        wxString::FromUTF8("Угол поворота коленвала, градусы"),
         rect.GetLeft() + 40,
         rect.GetBottom() + 5
     );
@@ -82,13 +82,22 @@ void KinematicPlotPanel::DrawAxes(wxDC& dc, const wxRect& rect)
     switch (m_mode)
     {
     case Mode::Displacement:
-        yLabel = wxString::FromUTF8("перемещение, мм");
+        yLabel = wxString::FromUTF8("Перемещение поршня, м");
         break;
     case Mode::Velocity:
-        yLabel = wxString::FromUTF8("скорость, мм/с");
+        yLabel = wxString::FromUTF8("Скорость поршня, м/с");
         break;
     case Mode::Acceleration:
-        yLabel = wxString::FromUTF8("ускорение, мм/с²");
+        yLabel = wxString::FromUTF8("Ускорение поршня, м/с²");
+        break;
+        case Mode::DisplacementSide:
+        yLabel = wxString::FromUTF8("Перемещение поршня, м");
+        break;
+    case Mode::VelocitySide:
+        yLabel = wxString::FromUTF8("Скорость поршня, м/с");
+        break;
+    case Mode::AccelerationSide:
+        yLabel = wxString::FromUTF8("Ускорение поршня, м/с²");
         break;
     }
 
@@ -121,6 +130,15 @@ void KinematicPlotPanel::DrawCurve(wxDC& dc, const wxRect& rect)
         break;
     case Mode::Acceleration:
         yvec = &m_results->acceleration_full;
+        break;
+    case Mode::DisplacementSide:
+        yvec = &m_results->stroke_full_side;
+        break;
+    case Mode::VelocitySide:
+        yvec = &m_results->velocity_full_side;
+        break;
+    case Mode::AccelerationSide:
+        yvec = &m_results->acceleration_full_side;
         break;
     }
 

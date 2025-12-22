@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <iostream>
 
+#define pi 3.14159265358979323846
+
 using namespace std;
 
 // ===== ВНУТРЕННИЕ ПРОТОТИПЫ =====
@@ -53,7 +55,7 @@ static inline double deg2rad(double deg) { return deg * 3.14159265358979323846 /
 // =====================================================================
 static void calcAxialKSM(const EngineParams &params, CalculationResults &results)
 {
-    const double pi = 3.14159265358979323846;
+     
     const double DEG_TO_RAD = pi / 180.0;
     const double RAD_TO_DEG = 180.0 / pi;
 
@@ -122,7 +124,7 @@ static void calcAxialKSM(const EngineParams &params, CalculationResults &results
 // =====================================================================
 static void calcDeaxialKSM(const EngineParams &params, CalculationResults &results)
 {
-    const double pi = 3.14159265358979323846;
+    
     const double DEG_TO_RAD = pi / 180.0;
     const double RAD_TO_DEG = 180.0 / pi;
 
@@ -192,7 +194,7 @@ static void calcDeaxialKSM(const EngineParams &params, CalculationResults &resul
 // =====================================================================
 static void calcVTypeKSM(const EngineParams &params, CalculationResults &results)
 {
-    const double pi = 3.14159265358979323846;
+    
     const double DEG_TO_RAD = pi / 180.0;
     const double RAD_TO_DEG = 180.0 / pi;
 
@@ -305,7 +307,7 @@ static void calcVTypeKSM(const EngineParams &params, CalculationResults &results
 // =====================================================================
 static void calcVTypeDeaxialKSM(const EngineParams &params, CalculationResults &results)
 {
-    const double pi = 3.14159265358979323846;
+     
     const double DEG_TO_RAD = pi / 180.0;
     const double RAD_TO_DEG = 180.0 / pi;
 
@@ -424,7 +426,7 @@ static void calcVTypeDeaxialKSM(const EngineParams &params, CalculationResults &
 // =====================================================================
 static void calcVTypeAttachedKSM(const EngineParams &params, CalculationResults &results)
 {
-    const double pi = 3.14159265358979323846;
+     
     const double DEG_TO_RAD = pi / 180.0;
     const double RAD_TO_DEG = 180.0 / pi;
 
@@ -579,7 +581,7 @@ static void calcVTypeAttachedKSM(const EngineParams &params, CalculationResults 
 // =====================================================================
 static void calcVTypeAttachedDeaxialKSM(const EngineParams &params, CalculationResults &results)
 {
-    const double pi = 3.14159265358979323846;
+     
     const double DEG_TO_RAD = pi / 180.0;
     const double RAD_TO_DEG = 180.0 / pi;
 

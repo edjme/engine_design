@@ -74,7 +74,8 @@ private:
     wxChoice*           m_graphTypeChoice = nullptr;
     KinematicPlotPanel* m_plotPanel       = nullptr;
     wxButton*           m_backButton      = nullptr;
-    wxButton*           m_saveButton      = nullptr;
+    wxButton*           m_saveCSVButton      = nullptr;
+    wxButton*           m_saveTXTButton      = nullptr;
 
     // --- построение интерфейса ---
     void BuildLayout();
@@ -96,6 +97,7 @@ private:
     void OnGraphTypeChanged(wxCommandEvent& evt);
     void OnBackToInput(wxCommandEvent& evt);
     void OnSaveCsv(wxCommandEvent& evt);
+    void OnSaveTxt(wxCommandEvent& evt);
 
     wxDECLARE_EVENT_TABLE();
 };

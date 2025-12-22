@@ -2,10 +2,10 @@
 	"artifacts" : 
 	[
 		{
-			"path" : "Debug/engine_gui.exe"
+			"path" : "MinSizeRel/engine_gui.exe"
 		},
 		{
-			"path" : "Debug/engine_gui.pdb"
+			"path" : "MinSizeRel/engine_gui.pdb"
 		}
 	],
 	"backtrace" : 2,
@@ -129,7 +129,7 @@
 			"compileCommandFragments" : 
 			[
 				{
-					"fragment" : "/DWIN32 /D_WINDOWS /GR /EHsc /Zi /Ob0 /Od /RTC1 -std:c++17 -MDd"
+					"fragment" : "/DWIN32 /D_WINDOWS /GR /EHsc /O1 /Ob1 /DNDEBUG -std:c++17 -MD"
 				}
 			],
 			"defines" : 
@@ -164,7 +164,7 @@
 				{
 					"backtrace" : 3,
 					"isSystem" : true,
-					"path" : "C:/Developing_Applications_and_libs/vcpkg_git/vcpkg/installed/x64-windows/lib/mswud"
+					"path" : "C:/Developing_Applications_and_libs/vcpkg_git/vcpkg/installed/x64-windows/lib/mswu"
 				},
 				{
 					"backtrace" : 3,
@@ -192,11 +192,11 @@
 	"dependencies" : 
 	[
 		{
-			"backtrace" : 3,
-			"id" : "engine_core::@6890427a1f51a3e7e1df"
+			"id" : "ZERO_CHECK::@6890427a1f51a3e7e1df"
 		},
 		{
-			"id" : "ZERO_CHECK::@6890427a1f51a3e7e1df"
+			"backtrace" : 3,
+			"id" : "engine_core::@6890427a1f51a3e7e1df"
 		}
 	],
 	"id" : "engine_gui::@6890427a1f51a3e7e1df",
@@ -205,11 +205,11 @@
 		"commandFragments" : 
 		[
 			{
-				"fragment" : "/DWIN32 /D_WINDOWS /GR /EHsc /Zi /Ob0 /Od /RTC1 -MDd",
+				"fragment" : "/DWIN32 /D_WINDOWS /GR /EHsc /O1 /Ob1 /DNDEBUG -MD",
 				"role" : "flags"
 			},
 			{
-				"fragment" : "/machine:x64 /debug /INCREMENTAL",
+				"fragment" : "/machine:x64 /INCREMENTAL:NO",
 				"role" : "flags"
 			},
 			{
@@ -218,17 +218,17 @@
 			},
 			{
 				"backtrace" : 3,
-				"fragment" : "Debug\\engine_core.lib",
+				"fragment" : "MinSizeRel\\engine_core.lib",
 				"role" : "libraries"
 			},
 			{
 				"backtrace" : 3,
-				"fragment" : "C:\\Developing_Applications_and_libs\\vcpkg_git\\vcpkg\\installed\\x64-windows\\debug\\lib\\\\wxmsw33ud_core.lib",
+				"fragment" : "C:\\Developing_Applications_and_libs\\vcpkg_git\\vcpkg\\installed\\x64-windows\\lib\\\\wxmsw33u_core.lib",
 				"role" : "libraries"
 			},
 			{
 				"backtrace" : 3,
-				"fragment" : "C:\\Developing_Applications_and_libs\\vcpkg_git\\vcpkg\\installed\\x64-windows\\debug\\lib\\\\wxbase33ud.lib",
+				"fragment" : "C:\\Developing_Applications_and_libs\\vcpkg_git\\vcpkg\\installed\\x64-windows\\lib\\\\wxbase33u.lib",
 				"role" : "libraries"
 			},
 			{

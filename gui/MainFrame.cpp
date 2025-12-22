@@ -3,6 +3,14 @@
 #include <wx/sizer.h>
 #include <wx/filedlg.h>
 #include <wx/msgdlg.h>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <iomanip>
+#include <ctime>
+#include <limits>
+
+using namespace std;
 
 // ID'шники
 enum
@@ -11,7 +19,8 @@ enum
     ID_SidebarDynamic,
     ID_CalcButton,
     ID_BackButton,
-    ID_SaveButton,
+    ID_SaveCSVButton,
+    ID_SaveTXTButton,
     ID_KSMTypeChoice,
     ID_GraphTypeChoice
 };
@@ -23,7 +32,8 @@ wxBEGIN_EVENT_TABLE(MainFrame, wxFrame)
     EVT_BUTTON(ID_CalcButton,       MainFrame::OnCalculate)
     EVT_CHOICE(ID_GraphTypeChoice,  MainFrame::OnGraphTypeChanged)
     EVT_BUTTON(ID_BackButton,       MainFrame::OnBackToInput)
-    EVT_BUTTON(ID_SaveButton,       MainFrame::OnSaveCsv)
+    EVT_BUTTON(ID_SaveCSVButton,       MainFrame::OnSaveCsv)
+    EVT_BUTTON(ID_SaveTXTButton,       MainFrame::OnSaveTxt)
 wxEND_EVENT_TABLE()
 
 MainFrame::MainFrame(const wxString& title)
@@ -278,14 +288,27 @@ void MainFrame::BuildKinematicPages(wxPanel* parent)
     ApplyDarkTheme(graphLabel);
     graphCtrlSizer->Add(graphLabel, 0, wxBOTTOM, 5);
 
-    wxString graphTypes[] = {
-        wxString::FromUTF8("Перемещение"),
-        wxString::FromUTF8("Скорость"),
-        wxString::FromUTF8("Ускорение")
-    };
+    wxArrayString graphTypes;
+
+
+    if (m_gammaInput != 0) {
+        graphTypes.Add(wxString::FromUTF8("Перемещение Главный цилиндр"));
+        graphTypes.Add(wxString::FromUTF8("Скорость Главный цилиндр"));
+        graphTypes.Add(wxString::FromUTF8("Ускорение Главный цилиндр"));
+        graphTypes.Add(wxString::FromUTF8("Перемещение Боковой цилиндр"));
+        graphTypes.Add(wxString::FromUTF8("Скорость Боковой цилиндр"));
+        graphTypes.Add(wxString::FromUTF8("Ускорение Боковой цилиндр"));
+    }
+    else {
+        graphTypes.Add(wxString::FromUTF8("Перемещение"));
+        graphTypes.Add(wxString::FromUTF8("Скорость"));
+        graphTypes.Add(wxString::FromUTF8("Ускорение"));
+    }
+    
+    
+    
     m_graphTypeChoice = new wxChoice(m_kinResultPanel, ID_GraphTypeChoice,
-                                     wxDefaultPosition, wxSize(180, -1),
-                                     WXSIZEOF(graphTypes), graphTypes);
+                                     wxDefaultPosition, wxSize(180, -1), graphTypes);
     m_graphTypeChoice->SetSelection(0);
     ApplyDarkTheme(m_graphTypeChoice);
     graphCtrlSizer->Add(m_graphTypeChoice, 0, wxBOTTOM, 10);
@@ -302,13 +325,17 @@ void MainFrame::BuildKinematicPages(wxPanel* parent)
     auto* bottomSizer = new wxBoxSizer(wxHORIZONTAL);
     m_backButton = new wxButton(m_kinResultPanel, ID_BackButton,
                                 wxString::FromUTF8("← Назад"));
-    m_saveButton = new wxButton(m_kinResultPanel, ID_SaveButton,
-                                wxString::FromUTF8("Сохранить результаты"));
+    m_saveCSVButton = new wxButton(m_kinResultPanel,  ID_SaveCSVButton,
+                                wxString::FromUTF8("\n Сохранить результаты \n в CSV \n"));
+    m_saveTXTButton = new wxButton(m_kinResultPanel,  ID_SaveTXTButton,
+                                wxString::FromUTF8("\n Сохранить результаты \n в TXT \n"));
     ApplyDarkTheme(m_backButton);
-    ApplyDarkTheme(m_saveButton);
+    ApplyDarkTheme(m_saveCSVButton);
+    ApplyDarkTheme(m_saveTXTButton);
 
     bottomSizer->Add(m_backButton, 0, wxRIGHT, 10);
-    bottomSizer->Add(m_saveButton, 0);
+    bottomSizer->Add(m_saveCSVButton, 0);
+    bottomSizer->Add(m_saveTXTButton, 0);
 
     resSizer->Add(bottomSizer, 0, wxALIGN_LEFT | wxALL, 10);
 
@@ -566,8 +593,14 @@ void MainFrame::OnGraphTypeChanged(wxCommandEvent&)
         m_plotPanel->SetMode(KinematicPlotPanel::Mode::Velocity);
     else if (sel == 2)
         m_plotPanel->SetMode(KinematicPlotPanel::Mode::Acceleration);
-    else
+    else if (sel == 0)
         m_plotPanel->SetMode(KinematicPlotPanel::Mode::Displacement);
+    else if (sel == 3 )
+        m_plotPanel->SetMode(KinematicPlotPanel::Mode::DisplacementSide);
+    else if (sel == 4 )
+        m_plotPanel->SetMode(KinematicPlotPanel::Mode::VelocitySide);
+    else if (sel == 5 )
+        m_plotPanel->SetMode(KinematicPlotPanel::Mode::AccelerationSide);
 }
 
 void MainFrame::OnBackToInput(wxCommandEvent& evt)
@@ -577,7 +610,7 @@ void MainFrame::OnBackToInput(wxCommandEvent& evt)
         int ans = wxMessageBox(
             wxString::FromUTF8(
                 "Сохранить результаты перед возвратом к вводу параметров?"),
-            wxString::FromUTF8("Сохранить результаты"),
+            wxString::FromUTF8("Сохранить в CSV"),
             wxYES_NO | wxCANCEL | wxICON_QUESTION,
             this);
 
@@ -587,11 +620,12 @@ void MainFrame::OnBackToInput(wxCommandEvent& evt)
             OnSaveCsv(evt);
     }
 
+    
     m_kinematicBook->SetSelection(0);
 }
 
 void MainFrame::OnSaveCsv(wxCommandEvent&)
-{
+{   
     if (!m_hasResults)
     {
         wxMessageBox(wxString::FromUTF8("Сначала выполните расчёт."),
@@ -599,14 +633,22 @@ void MainFrame::OnSaveCsv(wxCommandEvent&)
                      wxOK | wxICON_INFORMATION, this);
         return;
     }
-
+    
     wxFileDialog dlg(
         this,
-        wxString::FromUTF8("Сохранить результаты в CSV"),
+        wxString::FromUTF8("Сохранить"),
         "",
-        "ksm_results.csv",
-        "CSV файлы (*.csv)|*.csv|Все файлы (*.*)|*.*",
+        "ksm_results",
+        "CSV|*.csv",
         wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+
+    // Получаем текущее время
+    wxDateTime now = wxDateTime::Now();
+    // Форматируем время в нужный формат: 19.24.50__22.12.2004
+    wxString timestamp = now.Format("%H.%M.%S__%d.%m.%Y");
+    
+    dlg.SetFilename("ksm_results_" + timestamp+".csv");
+
 
     if (dlg.ShowModal() != wxID_OK)
         return;
@@ -614,6 +656,52 @@ void MainFrame::OnSaveCsv(wxCommandEvent&)
     std::string filename = dlg.GetPath().ToUTF8().data();
 
     bool ok = KinematicOutput::saveToCSV(m_lastResults, m_lastParams, filename);
+    if (ok)
+    {
+        wxMessageBox(wxString::FromUTF8("Файл успешно сохранён."),
+                     wxString::FromUTF8("Сохранение завершено"),
+                     wxOK | wxICON_INFORMATION, this);
+    }
+    else
+    {
+        wxMessageBox(wxString::FromUTF8("Не удалось сохранить файл."),
+                     wxString::FromUTF8("Ошибка сохранения"),
+                     wxOK | wxICON_ERROR, this);
+    }
+}
+
+    void MainFrame::OnSaveTxt(wxCommandEvent&)
+{   
+    if (!m_hasResults)
+    {
+        wxMessageBox(wxString::FromUTF8("Сначала выполните расчёт."),
+                     wxString::FromUTF8("Нет данных"),
+                     wxOK | wxICON_INFORMATION, this);
+        return;
+    }
+    
+    wxFileDialog dlg(
+        this,
+        wxString::FromUTF8("Сохранить"),
+        "",
+        "ksm_results",
+        "TXT|*.txt",
+        wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+
+    // Получаем текущее время
+    wxDateTime now = wxDateTime::Now();
+    // Форматируем время в нужный формат: 19.24.50__22.12.2004
+    wxString timestamp = now.Format("%H.%M.%S__%d.%m.%Y");
+    
+    dlg.SetFilename("ksm_results_" + timestamp+".txt");
+
+
+    if (dlg.ShowModal() != wxID_OK)
+        return;
+
+    std::string filename = dlg.GetPath().ToUTF8().data();
+
+    bool ok = KinematicOutput::saveToFormattedText(m_lastResults, m_lastParams, filename);
     if (ok)
     {
         wxMessageBox(wxString::FromUTF8("Файл успешно сохранён."),
