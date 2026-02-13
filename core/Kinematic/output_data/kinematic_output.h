@@ -35,6 +35,7 @@ private:
 
     // Проверка возможности записи в файл
     static bool canWriteToFile(const std::string &filename);
+    
 };
 
 #endif

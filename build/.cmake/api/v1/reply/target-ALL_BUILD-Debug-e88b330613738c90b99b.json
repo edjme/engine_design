@@ -22,13 +22,13 @@
 	"dependencies" : 
 	[
 		{
-			"id" : "engine_gui::@6890427a1f51a3e7e1df"
-		},
-		{
 			"id" : "ZERO_CHECK::@6890427a1f51a3e7e1df"
 		},
 		{
 			"id" : "engine_core::@6890427a1f51a3e7e1df"
+		},
+		{
+			"id" : "engine_gui::@6890427a1f51a3e7e1df"
 		}
 	],
 	"id" : "ALL_BUILD::@6890427a1f51a3e7e1df",
@@ -37,10 +37,10 @@
 	"orderDependencies" : 
 	[
 		{
-			"id" : "engine_gui::@6890427a1f51a3e7e1df"
+			"id" : "engine_core::@6890427a1f51a3e7e1df"
 		},
 		{
-			"id" : "engine_core::@6890427a1f51a3e7e1df"
+			"id" : "engine_gui::@6890427a1f51a3e7e1df"
 		}
 	],
 	"paths" : 

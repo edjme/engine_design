@@ -10,50 +10,265 @@
 using namespace std;
 
 // ===== ВНУТРЕННИЕ ПРОТОТИПЫ =====
-static void calcAxialKSM(const EngineParams &params, CalculationResults &results);
-static void calcDeaxialKSM(const EngineParams &params, CalculationResults &results);
-static void calcVTypeKSM(const EngineParams &params, CalculationResults &results);
-static void calcVTypeDeaxialKSM(const EngineParams &params, CalculationResults &results);
-static void calcVTypeAttachedKSM(const EngineParams &params, CalculationResults &results);
-static void calcVTypeAttachedDeaxialKSM(const EngineParams &params, CalculationResults &results);
+static void calcAxialKSM(const EngineParams &params, CalculationResults &results, double phaseShiftDeg = 0.0);
+static void calcDeaxialKSM(const EngineParams &params, CalculationResults &results, double phaseShiftDeg = 0.0);
+static void calcVTypeKSM(const EngineParams &params, CalculationResults &results, double phaseShiftDeg = 0.0);
+static void calcVTypeDeaxialKSM(const EngineParams &params, CalculationResults &results, double phaseShiftDeg = 0.0);
+static void calcVTypeAttachedKSM(const EngineParams &params, CalculationResults &results, double phaseShiftDeg = 0.0);
+static void calcVTypeAttachedDeaxialKSM(const EngineParams &params, CalculationResults &results, double phaseShiftDeg = 0.0);
+
+//ПЕРЕВОД ГРАДУСОВ В РАДИАНЫ
+static inline double deg2rad(double deg) { return deg * pi / 180.0; }
+
+//УГОЛ ЧЕРЕДОВАНИЯ ВСПЫШЕК
+static inline double calculateFiringInterval(int cylinderCount, int strokeCycle) {
+    // strokeCycle: 2 = 2-тактный, 4 = 4-тактный
+    if (cylinderCount <= 0) return 0.0;
+    double fullCycleDegrees = (strokeCycle == 2) ? 360.0 : 720.0;
+    return fullCycleDegrees / cylinderCount;
+}
+
+// ===== ФУНКЦИЯ РАСЧЕТА ФАЗОВЫХ УГЛОВ ДЛЯ КАЖДОГО ЦИЛИНДРА =====
+static std::vector<double> calculateFiringAngles(int cylinderCount, int strokeCycle, 
+                                                 const std::vector<int>& firingOrder = {}) {
+    std::vector<double> angles(cylinderCount, 0.0);
+    
+    if (!firingOrder.empty() && firingOrder.size() == cylinderCount) {
+        // Если задан порядок работы цилиндров
+        double interval = calculateFiringInterval(cylinderCount, strokeCycle);
+        for (size_t i = 0; i < firingOrder.size(); ++i) {
+            int cylIndex = firingOrder[i] - 1; // Предполагаем нумерацию с 1
+            if (cylIndex >= 0 && cylIndex < cylinderCount) {
+                angles[cylIndex] = i * interval;
+            }
+        }
+    } else {
+        // Равномерное распределение (по умолчанию)
+        double interval = calculateFiringInterval(cylinderCount, strokeCycle);
+        for (int i = 0; i < cylinderCount; ++i) {
+            angles[i] = i * interval;
+        }
+    }
+    
+    return angles;
+}
 
 // ===== ОСНОВНАЯ ФУНКЦИЯ =====
 CalculationResults calcCylinderKinematics(const EngineParams &params)
 {
     CalculationResults results;
 
+    // Инициализация векторов для каждого цилиндра
+    results.cylinder_stroke_full.resize(params.countCyl);
+    results.cylinder_stroke1.resize(params.countCyl);
+    results.cylinder_stroke2.resize(params.countCyl);
+    results.cylinder_velocity_full.resize(params.countCyl);
+    results.cylinder_velocity1.resize(params.countCyl);
+    results.cylinder_velocity2.resize(params.countCyl);
+    results.cylinder_acceleration_full.resize(params.countCyl);
+    results.cylinder_acceleration1.resize(params.countCyl);
+    results.cylinder_acceleration2.resize(params.countCyl);
+    results.cylinder_betta_rod.resize(params.countCyl);
+    results.cylinder_omega_rod.resize(params.countCyl);
+    results.cylinder_eps_rod.resize(params.countCyl);
+    
+    // Если есть боковые цилиндры
+    if (params.gamma != 0 || params.gammaPric != 0) {
+        results.cylinder_stroke_full_side.resize(params.countCyl);
+        results.cylinder_stroke1_side.resize(params.countCyl);
+        results.cylinder_stroke2_side.resize(params.countCyl);
+        results.cylinder_velocity_full_side.resize(params.countCyl);
+        results.cylinder_velocity1_side.resize(params.countCyl);
+        results.cylinder_velocity2_side.resize(params.countCyl);
+        results.cylinder_acceleration_full_side.resize(params.countCyl);
+        results.cylinder_acceleration1_side.resize(params.countCyl);
+        results.cylinder_acceleration2_side.resize(params.countCyl);
+        results.cylinder_betta_rod_side.resize(params.countCyl);
+        results.cylinder_omega_rod_side.resize(params.countCyl);
+        results.cylinder_eps_rod_side.resize(params.countCyl);
+    }
+
     // Угловая сетка
-    for (double a = 0; a <= params.end_alpha + 1e-9; a += params.step_alpha)
+    for (double a = 0; a <= params.end_alpha + 1e-9; a += params.step_alpha) {
         results.alpha.push_back(a);
+    }
+
+
+
+    if (params.dezaxial == 0 && params.gamma == 0 && params.gammaPric == 0 || params.dezaxial != 0) {
+    // Расчет для каждого цилиндра с учетом его фазы
+    for (int cyl = 0; cyl < params.countCyl; ++cyl) {
+        
+        
+        // Создаем временные параметры для этого цилиндра
+        EngineParams cylinderParams = params;
+        
+        // Создаем временную структуру результатов для расчета
+        CalculationResults tempResults;
+        tempResults.alpha = results.alpha;
+        
 
     const double e = params.dezaxial;
     const double gamma = params.gamma;
     const double gammaPric = params.gammaPric;
 
-    if (e == 0 && gamma == 0 && gammaPric == 0)
-        calcAxialKSM(params, results);
-    else if (e != 0 && gamma == 0 && gammaPric == 0)
-        calcDeaxialKSM(params, results);
-    else if (e == 0 && gamma != 0 && gammaPric == 0)
-        calcVTypeKSM(params, results);
-    else if (e != 0 && gamma != 0 && gammaPric == 0)
-        calcVTypeDeaxialKSM(params, results);
-    else if (e == 0 && gamma != 0 && gammaPric != 0)
-        calcVTypeAttachedKSM(params, results);
-    else if (e != 0 && gamma != 0 && gammaPric != 0)
-        calcVTypeAttachedDeaxialKSM(params, results);
+    if (e == 0 && gamma == 0 && gammaPric == 0) {
+        double phaseShift = calculateFiringInterval(params.countCyl, params.taktnost)*cyl;
+
+        calcAxialKSM(cylinderParams, tempResults, phaseShift);}
+
+    else if (e != 0 && gamma == 0 && gammaPric == 0){
+        double phaseShift = calculateFiringInterval(params.countCyl, params.taktnost)*cyl;
+
+        calcDeaxialKSM(cylinderParams, tempResults, phaseShift);}
+
+    else if (e == 0 && gamma != 0 && gammaPric == 0) {
+        double phaseShift = calculateFiringInterval(params.countCyl, params.taktnost)*cyl;
+
+        calcVTypeKSM(cylinderParams, tempResults, phaseShift);}
+     
+    else if (e != 0 && gamma != 0 && gammaPric == 0){
+        double phaseShift = calculateFiringInterval(params.countCyl, params.taktnost)*cyl;
+
+        calcVTypeDeaxialKSM(cylinderParams, tempResults, phaseShift);}
+
+    else if (e == 0 && gamma != 0 && gammaPric != 0){
+        double phaseShift = calculateFiringInterval(params.countCyl, params.taktnost)*cyl;
+
+        calcVTypeAttachedKSM(cylinderParams, tempResults, phaseShift);}
+
+    else if (e != 0 && gamma != 0 && gammaPric != 0){
+        double phaseShift = calculateFiringInterval(params.countCyl, params.taktnost)*cyl;
+
+        calcVTypeAttachedDeaxialKSM(cylinderParams, tempResults, phaseShift);}
+
+        // Сохраняем результаты для этого цилиндра
+        results.cylinder_stroke_full[cyl] = tempResults.stroke_full;
+        results.cylinder_stroke1[cyl] = tempResults.stroke1;
+        results.cylinder_stroke2[cyl] = tempResults.stroke2;
+        results.cylinder_velocity_full[cyl] = tempResults.velocity_full;
+        results.cylinder_velocity1[cyl] = tempResults.velocity1;
+        results.cylinder_velocity2[cyl] = tempResults.velocity2;
+        results.cylinder_acceleration_full[cyl] = tempResults.acceleration_full;
+        results.cylinder_acceleration1[cyl] = tempResults.acceleration1;
+        results.cylinder_acceleration2[cyl] = tempResults.acceleration2;
+        results.cylinder_betta_rod[cyl] = tempResults.betta_rod;
+        results.cylinder_omega_rod[cyl] = tempResults.omega_rod;
+        results.cylinder_eps_rod[cyl] = tempResults.eps_rod;
+        
+        // Если есть боковые цилиндры
+        if (params.gamma != 0 || params.gammaPric != 0) {
+            results.cylinder_stroke_full_side[cyl] = tempResults.stroke_full_side;
+            results.cylinder_stroke1_side[cyl] = tempResults.stroke1_side;
+            results.cylinder_stroke2_side[cyl] = tempResults.stroke2_side;
+            results.cylinder_velocity_full_side[cyl] = tempResults.velocity_full_side;
+            results.cylinder_velocity1_side[cyl] = tempResults.velocity1_side;
+            results.cylinder_velocity2_side[cyl] = tempResults.velocity2_side;
+            results.cylinder_acceleration_full_side[cyl] = tempResults.acceleration_full_side;
+            results.cylinder_acceleration1_side[cyl] = tempResults.acceleration1_side;
+            results.cylinder_acceleration2_side[cyl] = tempResults.acceleration2_side;
+            results.cylinder_betta_rod_side[cyl] = tempResults.betta_rod_side;
+            results.cylinder_omega_rod_side[cyl] = tempResults.omega_rod_side;
+            results.cylinder_eps_rod_side[cyl] = tempResults.eps_rod_side;
+        }
+        results.firing_interval = calculateFiringInterval(params.countCyl, params.taktnost);
+}
+    }
+    
+if (params.gamma != 0 || params.gammaPric != 0) {
+    // Расчет для каждого цилиндра с учетом его фазы
+    for (int cyl = 0; cyl < params.countCyl/2; ++cyl) {
+        
+        
+        // Создаем временные параметры для этого цилиндра
+        EngineParams cylinderParams = params;
+        
+        // Создаем временную структуру результатов для расчета
+        CalculationResults tempResults;
+        tempResults.alpha = results.alpha;
+        
+
+    const double e = params.dezaxial;
+    const double gamma = params.gamma;
+    const double gammaPric = params.gammaPric;
+
+    if (e == 0 && gamma == 0 && gammaPric == 0) {
+        double phaseShift = calculateFiringInterval(params.countCyl, params.taktnost)*cyl;
+
+        calcAxialKSM(cylinderParams, tempResults, phaseShift);}
+
+    else if (e != 0 && gamma == 0 && gammaPric == 0){
+        double phaseShift = calculateFiringInterval(params.countCyl, params.taktnost)*cyl;
+
+        calcDeaxialKSM(cylinderParams, tempResults, phaseShift);}
+
+    else if (e == 0 && gamma != 0 && gammaPric == 0) {
+        double phaseShift = calculateFiringInterval(params.countCyl / 2, params.taktnost)*cyl;
+
+        calcVTypeKSM(cylinderParams, tempResults, phaseShift);}
+     
+    else if (e != 0 && gamma != 0 && gammaPric == 0){
+        double phaseShift = calculateFiringInterval(params.countCyl / 2, params.taktnost)*cyl;
+
+        calcVTypeDeaxialKSM(cylinderParams, tempResults, phaseShift);}
+
+    else if (e == 0 && gamma != 0 && gammaPric != 0){
+        double phaseShift = calculateFiringInterval(params.countCyl / 2 , params.taktnost)*cyl;
+
+        calcVTypeAttachedKSM(cylinderParams, tempResults, phaseShift);}
+
+    else if (e != 0 && gamma != 0 && gammaPric != 0){
+        double phaseShift = calculateFiringInterval(params.countCyl / 2 , params.taktnost)*cyl;
+
+        calcVTypeAttachedDeaxialKSM(cylinderParams, tempResults, phaseShift);}
+
+        // Сохраняем результаты для этого цилиндра
+        results.cylinder_stroke_full[cyl] = tempResults.stroke_full;
+        results.cylinder_stroke1[cyl] = tempResults.stroke1;
+        results.cylinder_stroke2[cyl] = tempResults.stroke2;
+        results.cylinder_velocity_full[cyl] = tempResults.velocity_full;
+        results.cylinder_velocity1[cyl] = tempResults.velocity1;
+        results.cylinder_velocity2[cyl] = tempResults.velocity2;
+        results.cylinder_acceleration_full[cyl] = tempResults.acceleration_full;
+        results.cylinder_acceleration1[cyl] = tempResults.acceleration1;
+        results.cylinder_acceleration2[cyl] = tempResults.acceleration2;
+        results.cylinder_betta_rod[cyl] = tempResults.betta_rod;
+        results.cylinder_omega_rod[cyl] = tempResults.omega_rod;
+        results.cylinder_eps_rod[cyl] = tempResults.eps_rod;
+        
+        // Если есть боковые цилиндры
+        if (params.gamma != 0 || params.gammaPric != 0) {
+            results.cylinder_stroke_full_side[cyl] = tempResults.stroke_full_side;
+            results.cylinder_stroke1_side[cyl] = tempResults.stroke1_side;
+            results.cylinder_stroke2_side[cyl] = tempResults.stroke2_side;
+            results.cylinder_velocity_full_side[cyl] = tempResults.velocity_full_side;
+            results.cylinder_velocity1_side[cyl] = tempResults.velocity1_side;
+            results.cylinder_velocity2_side[cyl] = tempResults.velocity2_side;
+            results.cylinder_acceleration_full_side[cyl] = tempResults.acceleration_full_side;
+            results.cylinder_acceleration1_side[cyl] = tempResults.acceleration1_side;
+            results.cylinder_acceleration2_side[cyl] = tempResults.acceleration2_side;
+            results.cylinder_betta_rod_side[cyl] = tempResults.betta_rod_side;
+            results.cylinder_omega_rod_side[cyl] = tempResults.omega_rod_side;
+            results.cylinder_eps_rod_side[cyl] = tempResults.eps_rod_side;
+        }
+        results.firing_interval = calculateFiringInterval(params.countCyl, params.taktnost);
+}
+    }
+
 
     return results;
+    
 }
 
-// ===== ВСПОМОГАТЕЛЬНЫЕ МЕЛОЧИ =====
+// ===== ИСПОЛНИТЕЛЬНЫЕ ФУНКЦИИ =====
 
-static inline double deg2rad(double deg) { return deg * 3.14159265358979323846 / 180.0; }
+
+
 // =====================================================================
 // 1) АКСИАЛЬНЫЙ КШМ (e = 0, γ = 0, γp = 0)
 // Полные формулы
 // =====================================================================
-static void calcAxialKSM(const EngineParams &params, CalculationResults &results)
+static void calcAxialKSM(const EngineParams &params, CalculationResults &results,double phaseShift)
 {
      
     const double DEG_TO_RAD = pi / 180.0;
@@ -63,10 +278,12 @@ static void calcAxialKSM(const EngineParams &params, CalculationResults &results
     const double k = params.lyambda;            // r/L
     const double L = (k != 0.0) ? r / k : 1e12; // перестраховка от деления на 0
     const double w = 2 * pi * params.n / 60.0;  // угловая скорость
+    
 
-    for (double a_deg : results.alpha)
-    {
-        double a = a_deg * DEG_TO_RAD;
+    for (size_t i = 0; i < results.alpha.size(); ++i) {
+        // Смещаем угол на фазу цилиндра
+        double a_shifted_deg = fmod(results.alpha[i] + phaseShift, 360.0);
+        double a = a_shifted_deg * DEG_TO_RAD;
         double s_a = std::sin(a);
         double c_a = std::cos(a);
 
@@ -122,7 +339,7 @@ static void calcAxialKSM(const EngineParams &params, CalculationResults &results
 // 2) ДЕЗАКСИАЛЬНЫЙ КШМ (e ≠ 0, γ = 0, γp = 0)
 // Полные формулы с q, S и т.п.
 // =====================================================================
-static void calcDeaxialKSM(const EngineParams &params, CalculationResults &results)
+static void calcDeaxialKSM(const EngineParams &params, CalculationResults &results,double phaseShift)
 {
     
     const double DEG_TO_RAD = pi / 180.0;
@@ -135,9 +352,10 @@ static void calcDeaxialKSM(const EngineParams &params, CalculationResults &resul
     const double e = params.dezaxial;
     const double z = (r != 0.0) ? e / r : 0.0;
 
-    for (double a_deg : results.alpha)
-    {
-        double a = a_deg * DEG_TO_RAD;
+    for (size_t i = 0; i < results.alpha.size(); ++i) {
+        // Смещаем угол на фазу цилиндра
+        double a_shifted_deg = fmod(results.alpha[i] + phaseShift, 360.0);
+        double a = a_shifted_deg * DEG_TO_RAD;
         double s_a = std::sin(a);
         double c_a = std::cos(a);
 
@@ -192,7 +410,7 @@ static void calcDeaxialKSM(const EngineParams &params, CalculationResults &resul
 // 3) V-ОБРАЗНЫЙ КШМ (рядом сидящие шатуны) (e = 0, γ ≠ 0, γp = 0)
 // Полные формулы для главного и бокового
 // =====================================================================
-static void calcVTypeKSM(const EngineParams &params, CalculationResults &results)
+static void calcVTypeKSM(const EngineParams &params, CalculationResults &results,double phaseShift)
 {
     
     const double DEG_TO_RAD = pi / 180.0;
@@ -204,9 +422,10 @@ static void calcVTypeKSM(const EngineParams &params, CalculationResults &results
     const double w = 2 * pi * params.n / 60.0;
     const double g = deg2rad(params.gamma);
 
-    for (double a_deg : results.alpha)
-    {
-        double a = a_deg * DEG_TO_RAD;
+    for (size_t i = 0; i < results.alpha.size(); ++i) {
+        // Смещаем угол на фазу цилиндра
+        double a_shifted_deg = fmod(results.alpha[i] + phaseShift, 360.0);
+        double a = a_shifted_deg * DEG_TO_RAD;
 
         // ===== Главный цилиндр (как аксиальный) =====
         {
@@ -305,7 +524,7 @@ static void calcVTypeKSM(const EngineParams &params, CalculationResults &results
 // 4) V-ОБРАЗНЫЙ ДЕЗАКСИАЛЬНЫЙ (e ≠ 0, γ ≠ 0, γp = 0)
 // Полные формулы для главного и бокового с q,S
 // =====================================================================
-static void calcVTypeDeaxialKSM(const EngineParams &params, CalculationResults &results)
+static void calcVTypeDeaxialKSM(const EngineParams &params, CalculationResults &results,double phaseShift)
 {
      
     const double DEG_TO_RAD = pi / 180.0;
@@ -319,9 +538,10 @@ static void calcVTypeDeaxialKSM(const EngineParams &params, CalculationResults &
     const double z = (r != 0.0) ? e / r : 0.0;
     const double g = deg2rad(params.gamma);
 
-    for (double a_deg : results.alpha)
-    {
-        double a = a_deg * DEG_TO_RAD;
+    for (size_t i = 0; i < results.alpha.size(); ++i) {
+        // Смещаем угол на фазу цилиндра
+        double a_shifted_deg = fmod(results.alpha[i] + phaseShift, 360.0);
+        double a = a_shifted_deg * DEG_TO_RAD;
 
         // ===== Главный цилиндр =====
         {
@@ -424,7 +644,7 @@ static void calcVTypeDeaxialKSM(const EngineParams &params, CalculationResults &
 // 5) V-ОБРАЗНЫЙ С ПРИЦЕПНЫМ ШАТУНОМ (e = 0, γ ≠ 0, γp ≠ 0)
 // Полные формулы (строгая кинематика с β, β', β'')
 // =====================================================================
-static void calcVTypeAttachedKSM(const EngineParams &params, CalculationResults &results)
+static void calcVTypeAttachedKSM(const EngineParams &params, CalculationResults &results,double phaseShift)
 {
      
     const double DEG_TO_RAD = pi / 180.0;
@@ -446,9 +666,10 @@ static void calcVTypeAttachedKSM(const EngineParams &params, CalculationResults 
     const double gp = deg2rad(params.gammaPric);
     const double tet = g - gp;
 
-    for (double a_deg : results.alpha)
-    {
-        double a = a_deg * DEG_TO_RAD;
+    for (size_t i = 0; i < results.alpha.size(); ++i) {
+        // Смещаем угол на фазу цилиндра
+        double a_shifted_deg = fmod(results.alpha[i] + phaseShift, 360.0);
+        double a = a_shifted_deg * DEG_TO_RAD;
 
         // ===== Главный цилиндр (как аксиальный) =====
         {
@@ -579,7 +800,7 @@ static void calcVTypeAttachedKSM(const EngineParams &params, CalculationResults 
 // 6) V-ОБРАЗНЫЙ С ПРИЦЕПНЫМ ШАТУНОМ + ДЕЗАКСИАЛЬНОСТЬ (e ≠ 0, γ ≠ 0, γp ≠ 0)
 // Полные формулы (как в п.5 + учёт e в β1)
 // =====================================================================
-static void calcVTypeAttachedDeaxialKSM(const EngineParams &params, CalculationResults &results)
+static void calcVTypeAttachedDeaxialKSM(const EngineParams &params, CalculationResults &results,double phaseShift)
 {
      
     const double DEG_TO_RAD = pi / 180.0;
@@ -604,9 +825,10 @@ static void calcVTypeAttachedDeaxialKSM(const EngineParams &params, CalculationR
     const double gp = deg2rad(params.gammaPric);
     const double tet = g - gp;
 
-    for (double a_deg : results.alpha)
-    {
-        double a = a_deg * DEG_TO_RAD;
+    for (size_t i = 0; i < results.alpha.size(); ++i) {
+        // Смещаем угол на фазу цилиндра
+        double a_shifted_deg = fmod(results.alpha[i] + phaseShift, 360.0);
+        double a = a_shifted_deg * DEG_TO_RAD;
 
         // ===== Главный цилиндр (деаксиальный) =====
         {

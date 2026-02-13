@@ -15,32 +15,37 @@ using namespace std;
 // ID'шники
 enum
 {
-    ID_SidebarKinematic = wxID_HIGHEST + 1,
-    ID_SidebarDynamic,
-    ID_CalcButton,
-    ID_BackButton,
-    ID_SaveCSVButton,
-    ID_SaveTXTButton,
-    ID_KSMTypeChoice,
-    ID_GraphTypeChoice
+    ID_SidebarKinematic = wxID_HIGHEST + 1, // Кнопка "Кинематика" в меню
+    ID_SidebarDynamic, // Кнопка "Динамика" в меню
+    ID_CalcButton, //Кнопка "Рассчитать"
+    ID_BackButton, //Кнопка "Назад"
+    ID_SaveCSVButton,//Кнопка "Сохранить в CSV"
+    ID_SaveTXTButton,//Кнопка "Сохранить в TXT"
+    ID_KSMTypeChoice,//Выбор типа КШМ
+    ID_GraphTypeChoice, // Выбор типа графика
+    ID_CylinderChoice,   // Выбор цилиндра для отображения
+    ID_ShowAllCylinders  // Чекбокс "Показать все цилиндры"
 };
 
 wxBEGIN_EVENT_TABLE(MainFrame, wxFrame)
-    EVT_BUTTON(ID_SidebarKinematic, MainFrame::OnSidebarKinematic)
-    EVT_BUTTON(ID_SidebarDynamic,   MainFrame::OnSidebarDynamic)
-    EVT_CHOICE(ID_KSMTypeChoice,    MainFrame::OnKSMTypeChanged)
-    EVT_BUTTON(ID_CalcButton,       MainFrame::OnCalculate)
-    EVT_CHOICE(ID_GraphTypeChoice,  MainFrame::OnGraphTypeChanged)
-    EVT_BUTTON(ID_BackButton,       MainFrame::OnBackToInput)
-    EVT_BUTTON(ID_SaveCSVButton,       MainFrame::OnSaveCsv)
-    EVT_BUTTON(ID_SaveTXTButton,       MainFrame::OnSaveTxt)
+    EVT_BUTTON(ID_SidebarKinematic, MainFrame::OnSidebarKinematic) // Нажатие кнопки "Кинематика"
+    EVT_BUTTON(ID_SidebarDynamic,   MainFrame::OnSidebarDynamic) // Нажатие кнопки "Динамика"
+    EVT_CHOICE(ID_KSMTypeChoice,    MainFrame::OnKSMTypeChanged) // Изменение типа КШМ
+    EVT_BUTTON(ID_CalcButton,       MainFrame::OnCalculate) // Нажатие "Рассчитать"
+    EVT_CHOICE(ID_GraphTypeChoice,  MainFrame::OnGraphTypeChanged) // Изменение типа графика
+    EVT_CHOICE(ID_CylinderChoice,   MainFrame::OnCylinderChanged)  // Изменение выбора цилиндра
+    EVT_CHECKBOX(ID_ShowAllCylinders, MainFrame::OnShowAllCylindersChanged) // Изменение чекбокса "Показать все"
+    EVT_BUTTON(ID_BackButton,       MainFrame::OnBackToInput) // Нажатие "Назад"
+    EVT_BUTTON(ID_SaveCSVButton,    MainFrame::OnSaveCsv) // Сохранение в CSV
+    EVT_BUTTON(ID_SaveTXTButton,    MainFrame::OnSaveTxt) // Сохранение в TXT
+    
 wxEND_EVENT_TABLE()
 
 MainFrame::MainFrame(const wxString& title)
     : wxFrame(nullptr, wxID_ANY, title, wxDefaultPosition, wxSize(1150, 720))
 {
-    BuildLayout();
-    Centre();
+    BuildLayout(); // Создаёт интерфейс
+    Centre(); // Центрирует окно
 }
 
 // =====================================================================
@@ -207,6 +212,79 @@ void MainFrame::BuildKinematicPages(wxPanel* parent)
         ApplyDarkTheme(ctrl);
     };
 
+    // 1. Количество цилиндров (обычно 1, 2, 3, 4, 6, 8, 10, 12, 16)
+    // Опции для рядных двигателей (могут быть нечётные)
+    wxArrayString cylinderOptionsInline;
+    cylinderOptionsInline.Add("1");
+    cylinderOptionsInline.Add("2");
+    cylinderOptionsInline.Add("3");
+    cylinderOptionsInline.Add("4");
+    cylinderOptionsInline.Add("5");
+    cylinderOptionsInline.Add("6");
+    cylinderOptionsInline.Add("8");
+    cylinderOptionsInline.Add("10");
+    cylinderOptionsInline.Add("12");
+    cylinderOptionsInline.Add("16");
+
+    // Опции для V-образных двигателей (только чётные)
+    wxArrayString cylinderOptionsV;
+    cylinderOptionsV.Add("2");
+    cylinderOptionsV.Add("4");
+    cylinderOptionsV.Add("6");
+    cylinderOptionsV.Add("8");
+    cylinderOptionsV.Add("10");
+    cylinderOptionsV.Add("12");
+    cylinderOptionsV.Add("16");
+    
+    // Создаём метку
+    auto* cylLabel = new wxStaticText(m_kinInputPanel, wxID_ANY,
+                                 wxString::FromUTF8("Количество цилиндров:"));
+    grid->Add(cylLabel, 0, wxALIGN_CENTER_VERTICAL);
+
+    // СОЗДАЁМ ДВА ВЫПАДАЮЩИХ СПИСКА
+    m_CountCylChoiceInline = new wxChoice(m_kinInputPanel, wxID_ANY,
+                                     wxDefaultPosition, wxDefaultSize,
+                                     cylinderOptionsInline);
+    m_CountCylChoiceInline->SetSelection(3); // Выбираем "4" по умолчанию
+
+    m_CountCylChoiceV = new wxChoice(m_kinInputPanel, wxID_ANY,
+                                wxDefaultPosition, wxDefaultSize,
+                                cylinderOptionsV);
+    m_CountCylChoiceV->SetSelection(1); // Выбираем "4" по умолчанию (индекс 1)
+    m_CountCylChoiceV->Hide(); // По умолчанию скрыт
+
+    // КОНТЕЙНЕР ДЛЯ ОБОИХ СПИСКОВ
+    auto* cylChoiceSizer = new wxBoxSizer(wxHORIZONTAL);
+    cylChoiceSizer->Add(m_CountCylChoiceInline, 1, wxEXPAND);
+    cylChoiceSizer->Add(m_CountCylChoiceV, 1, wxEXPAND);
+    grid->Add(cylChoiceSizer, 1, wxEXPAND);
+
+    // Применяем тему к обоим
+    ApplyDarkTheme(cylLabel);
+    ApplyDarkTheme(m_CountCylChoiceInline);
+    ApplyDarkTheme(m_CountCylChoiceV);
+
+    // Устанавливаем текущий активный Choice
+    m_CountCylChoice = m_CountCylChoiceInline;
+
+    // 2. Тактность (2 или 4 такта)
+    wxArrayString taktOptions;
+    taktOptions.Add("2");
+    taktOptions.Add("4");
+    
+    auto* taktLabel = new wxStaticText(m_kinInputPanel, wxID_ANY,
+                                      wxString::FromUTF8("Тактность:"));
+    grid->Add(taktLabel, 0, wxALIGN_CENTER_VERTICAL);
+    
+    m_TaktChoice = new wxChoice(m_kinInputPanel, wxID_ANY,
+                               wxDefaultPosition, wxDefaultSize,
+                               taktOptions);
+    m_TaktChoice->SetSelection(0); // Выбираем "2" по умолчанию
+    grid->Add(m_TaktChoice, 1, wxEXPAND);
+    ApplyDarkTheme(taktLabel);
+    ApplyDarkTheme(m_TaktChoice);
+
+    
     addRow(wxString::FromUTF8("Шаг α, град:"),             m_stepAlphaInput, "1.0");
     addRow(wxString::FromUTF8("Предел α, град:"),          m_endAlphaInput,  "360.0");
     addRow(wxString::FromUTF8("Радиус кривошипа r, м:"),   m_radcrankInput,  "0.020");
@@ -218,6 +296,7 @@ void MainFrame::BuildKinematicPages(wxPanel* parent)
     m_gammaLabel = new wxStaticText(m_kinInputPanel, wxID_ANY,
                                     wxString::FromUTF8("Угол развала γ, град:"));
     grid->Add(m_gammaLabel, 0, wxALIGN_CENTER_VERTICAL);
+
     m_gammaInput = new wxTextCtrl(m_kinInputPanel, wxID_ANY, "60.0");
     grid->Add(m_gammaInput, 1, wxEXPAND);
     ApplyDarkTheme(m_gammaLabel);
@@ -226,6 +305,7 @@ void MainFrame::BuildKinematicPages(wxPanel* parent)
     m_dezaxLabel = new wxStaticText(m_kinInputPanel, wxID_ANY,
                                     wxString::FromUTF8("Дезаксиал e, м:"));
     grid->Add(m_dezaxLabel, 0, wxALIGN_CENTER_VERTICAL);
+
     m_dezaxInput = new wxTextCtrl(m_kinInputPanel, wxID_ANY, "0.0");
     grid->Add(m_dezaxInput, 1, wxEXPAND);
     ApplyDarkTheme(m_dezaxLabel);
@@ -234,6 +314,7 @@ void MainFrame::BuildKinematicPages(wxPanel* parent)
     m_gammaPricLabel = new wxStaticText(m_kinInputPanel, wxID_ANY,
                                         wxString::FromUTF8("Угол прицепного шатуна γp, град:"));
     grid->Add(m_gammaPricLabel, 0, wxALIGN_CENTER_VERTICAL);
+
     m_gammaPricInput = new wxTextCtrl(m_kinInputPanel, wxID_ANY, "0.0");
     grid->Add(m_gammaPricInput, 1, wxEXPAND);
     ApplyDarkTheme(m_gammaPricLabel);
@@ -242,6 +323,7 @@ void MainFrame::BuildKinematicPages(wxPanel* parent)
     m_radcrank1Label = new wxStaticText(m_kinInputPanel, wxID_ANY,
                                         wxString::FromUTF8("Радиус кривошипа прицепного r1, м:"));
     grid->Add(m_radcrank1Label, 0, wxALIGN_CENTER_VERTICAL);
+
     m_radcrank1Input = new wxTextCtrl(m_kinInputPanel, wxID_ANY, "0.02");
     grid->Add(m_radcrank1Input, 1, wxEXPAND);
     ApplyDarkTheme(m_radcrank1Label);
@@ -250,6 +332,7 @@ void MainFrame::BuildKinematicPages(wxPanel* parent)
     m_lengthRod1Label = new wxStaticText(m_kinInputPanel, wxID_ANY,
                                          wxString::FromUTF8("Длина прицепного шатуна L1, м:"));
     grid->Add(m_lengthRod1Label, 0, wxALIGN_CENTER_VERTICAL);
+
     m_lengthRod1Input = new wxTextCtrl(m_kinInputPanel, wxID_ANY, "0.10");
     grid->Add(m_lengthRod1Input, 1, wxEXPAND);
     ApplyDarkTheme(m_lengthRod1Label);
@@ -288,34 +371,54 @@ void MainFrame::BuildKinematicPages(wxPanel* parent)
     ApplyDarkTheme(graphLabel);
     graphCtrlSizer->Add(graphLabel, 0, wxBOTTOM, 5);
 
+
     wxArrayString graphTypes;
+    graphTypes.Add(wxString::FromUTF8("Перемещение (основной)"));
+    graphTypes.Add(wxString::FromUTF8("Скорость (основной)"));
+    graphTypes.Add(wxString::FromUTF8("Ускорение (основной)"));
+    graphTypes.Add(wxString::FromUTF8("Перемещение (боковой)"));
+    graphTypes.Add(wxString::FromUTF8("Скорость (боковой)"));
+    graphTypes.Add(wxString::FromUTF8("Ускорение (боковой)"));
 
-
-    if (m_gammaInput != 0) {
-        graphTypes.Add(wxString::FromUTF8("Перемещение Главный цилиндр"));
-        graphTypes.Add(wxString::FromUTF8("Скорость Главный цилиндр"));
-        graphTypes.Add(wxString::FromUTF8("Ускорение Главный цилиндр"));
-        graphTypes.Add(wxString::FromUTF8("Перемещение Боковой цилиндр"));
-        graphTypes.Add(wxString::FromUTF8("Скорость Боковой цилиндр"));
-        graphTypes.Add(wxString::FromUTF8("Ускорение Боковой цилиндр"));
-    }
-    else {
-        graphTypes.Add(wxString::FromUTF8("Перемещение"));
-        graphTypes.Add(wxString::FromUTF8("Скорость"));
-        graphTypes.Add(wxString::FromUTF8("Ускорение"));
-    }
-    
-    
-    
     m_graphTypeChoice = new wxChoice(m_kinResultPanel, ID_GraphTypeChoice,
-                                     wxDefaultPosition, wxSize(180, -1), graphTypes);
+                                 wxDefaultPosition, wxSize(180, -1), graphTypes);
     m_graphTypeChoice->SetSelection(0);
     ApplyDarkTheme(m_graphTypeChoice);
     graphCtrlSizer->Add(m_graphTypeChoice, 0, wxBOTTOM, 10);
+    
+
+    // === ЭЛЕМЕНТЫ, КОТОРЫЕ МЕНЯЮТСЯ В ЗАВИСИМОСТИ ОТ ТИПА ДВИГАТЕЛЯ ===
+    // Создаём всё, но будем обновлять текст в UpdateParameterVisibility()
+    
+    // Метка для выбора цилиндра/ряда
+    m_cylinderLabel = new wxStaticText(m_kinResultPanel, wxID_ANY,
+                                       wxString::FromUTF8("Цилиндр:"));
+    ApplyDarkTheme(m_cylinderLabel);
+    graphCtrlSizer->Add(m_cylinderLabel, 0, wxBOTTOM, 5);
+
+    // Выпадающий список цилиндров
+    wxArrayString cylinderChoiceOptions;
+    for (int i = 1; i <= 16; ++i) {
+        cylinderChoiceOptions.Add(wxString::Format("%d", i));
+    }
+
+    m_cylinderChoice = new wxChoice(m_kinResultPanel, ID_CylinderChoice,
+                                    wxDefaultPosition, wxSize(120, -1),
+                                    cylinderChoiceOptions);
+    m_cylinderChoice->SetSelection(0);
+    m_cylinderChoice->Enable(false);
+    ApplyDarkTheme(m_cylinderChoice);
+    graphCtrlSizer->Add(m_cylinderChoice, 0, wxBOTTOM, 10);
+
+    // Чекбокс для показа всех
+    m_showAllCylindersCheck = new wxCheckBox(m_kinResultPanel, ID_ShowAllCylinders,
+                                             wxString::FromUTF8("Показать все цилиндры"));
+    ApplyDarkTheme(m_showAllCylindersCheck);
+    graphCtrlSizer->Add(m_showAllCylindersCheck, 0, wxBOTTOM, 10);
 
     topResSizer->Add(graphCtrlSizer, 0, wxALL | wxALIGN_TOP, 10);
 
-    // справа — сам график
+    // Панель графика
     m_plotPanel = new KinematicPlotPanel(m_kinResultPanel);
     topResSizer->Add(m_plotPanel, 1, wxEXPAND | wxALL, 10);
 
@@ -343,7 +446,6 @@ void MainFrame::BuildKinematicPages(wxPanel* parent)
 
     // добавляем страницы в книжку
     m_kinematicBook->AddPage( m_kinInputPanel, wxString::FromUTF8("Ввод параметров"), true);
-
     m_kinematicBook->AddPage( m_kinResultPanel, wxString::FromUTF8("Результаты"), false);
 
     vbox->Add(m_kinematicBook, 1, wxEXPAND | wxALL, 5);
@@ -355,6 +457,20 @@ void MainFrame::BuildKinematicPages(wxPanel* parent)
 // =====================================================================
 //  Вспомогательные функции
 // =====================================================================
+
+void MainFrame::OnCylinderChanged(wxCommandEvent& evt)
+{
+    int cyl = m_cylinderChoice->GetSelection();
+    if (cyl >= 0) {
+        m_plotPanel->SetCurrentCylinder(cyl);
+    }
+}
+
+void MainFrame::OnShowAllCylindersChanged(wxCommandEvent& evt)
+{
+    m_plotPanel->SetShowAllCylinders(m_showAllCylindersCheck->IsChecked());
+    m_cylinderChoice->Enable(!m_showAllCylindersCheck->IsChecked());
+}
 
 void MainFrame::ApplyDarkTheme(wxWindow* w)
 {
@@ -372,7 +488,7 @@ void MainFrame::UpdateKSMTypeFromChoice()
     int sel = m_ksmTypeChoice->GetSelection();
     if (sel < 0) sel = 0;
     m_currentType = static_cast<KSMType>(sel);
-    UpdateParameterVisibility();
+    UpdateParameterVisibility(); // Вызываем обновление видимости
 }
 
 void MainFrame::UpdateParameterVisibility()
@@ -412,6 +528,55 @@ void MainFrame::UpdateParameterVisibility()
         break;
     }
 
+    // ПЕРЕКЛЮЧАЕМ ВИДИМЫЙ СПИСОК ЦИЛИНДРОВ С СОХРАНЕНИЕМ ЗНАЧЕНИЯ
+    if (m_CountCylChoiceInline && m_CountCylChoiceV) {
+        
+        // СОХРАНЯЕМ ТЕКУЩЕЕ ЗНАЧЕНИЕ
+        int currentValue = 4;
+        if (m_CountCylChoice) {
+            int currentSel = m_CountCylChoice->GetSelection();
+            if (currentSel != wxNOT_FOUND) {
+                wxString valStr = m_CountCylChoice->GetString(currentSel);
+                long val;
+                if (valStr.ToLong(&val)) {
+                    currentValue = (int)val;
+                }
+            }
+        }
+        
+        if (showGamma) {
+            // V-образный - показываем список с чётными
+            m_CountCylChoiceInline->Hide();
+            m_CountCylChoiceV->Show();
+            m_CountCylChoice = m_CountCylChoiceV;
+            
+            // Корректируем до ближайшего чётного
+            if (currentValue % 2 != 0) currentValue = 4;
+            if (currentValue < 2) currentValue = 4;
+            if (currentValue > 16) currentValue = 16;
+            
+            // УСТАНАВЛИВАЕМ ВЫБОР В НОВОМ СПИСКЕ
+            wxString targetStr = wxString::Format("%d", currentValue);
+            int newSel = m_CountCylChoiceV->FindString(targetStr);
+            if (newSel != wxNOT_FOUND) {
+                m_CountCylChoiceV->SetSelection(newSel);
+            }
+        } else {
+            // Рядный - показываем полный список
+            m_CountCylChoiceInline->Show();
+            m_CountCylChoiceV->Hide();
+            m_CountCylChoice = m_CountCylChoiceInline;
+            
+            // УСТАНАВЛИВАЕМ ВЫБОР В НОВОМ СПИСКЕ
+            wxString targetStr = wxString::Format("%d", currentValue);
+            int newSel = m_CountCylChoiceInline->FindString(targetStr);
+            if (newSel != wxNOT_FOUND) {
+                m_CountCylChoiceInline->SetSelection(newSel);
+            }
+        }
+    }
+
+    // Обновляем видимость дополнительных параметров
     m_gammaLabel->Show(showGamma);
     m_gammaInput->Show(showGamma);
     m_dezaxLabel->Show(showDezax);
@@ -423,18 +588,91 @@ void MainFrame::UpdateParameterVisibility()
     m_lengthRod1Label->Show(showL1);
     m_lengthRod1Input->Show(showL1);
 
+    // Обновляем список типов графиков
+    if (m_graphTypeChoice) {
+        // Сохраняем текущий выбор
+        int currentSel = m_graphTypeChoice->GetSelection();
+        
+        // Очищаем список
+        m_graphTypeChoice->Clear();
+        
+        // Добавляем пункты в зависимости от типа
+        if (m_currentType == KSMType::Axial || m_currentType == KSMType::Deaxial) {
+            // Только основные графики
+            m_graphTypeChoice->Append(wxString::FromUTF8("Перемещение (основной)"));
+            m_graphTypeChoice->Append(wxString::FromUTF8("Скорость (основной)"));
+            m_graphTypeChoice->Append(wxString::FromUTF8("Ускорение (основной)"));
+            
+            // Если был выбран боковой график, сбрасываем на основной
+            if (currentSel >= 3) currentSel = 0;
+        } else {
+            // Все графики
+            m_graphTypeChoice->Append(wxString::FromUTF8("Перемещение (основной)"));
+            m_graphTypeChoice->Append(wxString::FromUTF8("Скорость (основной)"));
+            m_graphTypeChoice->Append(wxString::FromUTF8("Ускорение (основной)"));
+            m_graphTypeChoice->Append(wxString::FromUTF8("Перемещение (боковой)"));
+            m_graphTypeChoice->Append(wxString::FromUTF8("Скорость (боковой)"));
+            m_graphTypeChoice->Append(wxString::FromUTF8("Ускорение (боковой)"));
+        }
+        
+        // Восстанавливаем выбор
+        if (currentSel >= 0 && currentSel < (int)m_graphTypeChoice->GetCount()) {
+            m_graphTypeChoice->SetSelection(currentSel);
+        } else {
+            m_graphTypeChoice->SetSelection(0);
+        }
+    }
+    
+    // ОБНОВЛЯЕМ ТЕКСТЫ В ПАНЕЛИ РЕЗУЛЬТАТОВ
+    if (showGamma) {
+        // V-образный двигатель
+        m_cylinderLabel->SetLabel(wxString::FromUTF8("Ряд:"));
+        m_showAllCylindersCheck->SetLabel(wxString::FromUTF8("Показать все ряды"));
+    } else {
+        // Рядный двигатель
+        m_cylinderLabel->SetLabel(wxString::FromUTF8("Цилиндр:"));
+        m_showAllCylindersCheck->SetLabel(wxString::FromUTF8("Показать все цилиндры"));
+    }
+
     m_kinInputPanel->Layout();
+
+    // Обновляем размеры панели результатов
+    if (m_kinResultPanel) {
+        m_kinResultPanel->Layout();
+    }
 }
 
 bool MainFrame::ReadParamsFromUI(EngineParams& p, wxString& err)
 {
     double stepA, endA, r, lam, n;
+    int cylinderCount = 0;
+    int taktCount = 0;
+
     double gamma = 0.0, dez = 0.0, gammaP = 0.0, r1 = 0.0, L1 = 0.0;
 
     auto parse = [&](wxTextCtrl* ctrl, double& out) -> bool {
         wxString s = ctrl->GetValue();
         return s.ToDouble(&out);
     };
+
+    // 1. Читаем количество цилиндров
+    // Читаем количество цилиндров из АКТИВНОГО Choice
+    int cylinderIndex = m_CountCylChoice->GetSelection();
+    if (cylinderIndex == wxNOT_FOUND) {
+        p.countCyl = 4;
+    } else {
+        wxString cylStr = m_CountCylChoice->GetString(cylinderIndex);
+        long cylValue;
+        if (cylStr.ToLong(&cylValue)) {
+            p.countCyl = (int)cylValue;
+        } else {
+            p.countCyl = 4;
+        }
+    }
+    
+    // 2. Читаем тактность
+    taktCount = m_TaktChoice->GetSelection();
+    if (taktCount == wxNOT_FOUND) taktCount = 0; // По умолчанию 2 такта
 
     if (!parse(m_stepAlphaInput, stepA) ||
         !parse(m_endAlphaInput,  endA)  ||
@@ -482,12 +720,19 @@ bool MainFrame::ReadParamsFromUI(EngineParams& p, wxString& err)
         return false;
     }
 
-    p = EngineParams{};
+    //p = EngineParams{};
     p.step_alpha = stepA;
     p.end_alpha  = endA;
     p.radcrank   = r;
     p.lyambda    = lam;
     p.n          = n;
+
+    // Нужно преобразовать индекс в реальное значение
+    
+    
+    
+    // Для тактности
+    p.taktnost = (taktCount == 0) ? 2 : 4;
 
     switch (m_currentType)
     {
@@ -559,23 +804,52 @@ void MainFrame::OnCalculate(wxCommandEvent&)
         return;
     }
 
+    
+
     try
-    {
+    {   // ШАГ 1: ЯВНО очищаем старые данные
+        m_lastResults = CalculationResults{};
+
+        // ШАГ 2: Делаем новый расчёт
         CalculationResults res = calcCylinderKinematics(params);
         m_lastParams  = params;
         m_lastResults = std::move(res);
         m_hasResults  = true;
 
+        // ШАГ 3: Обновляем статус
         wxString st;
         st << wxString::FromUTF8("Расчёт выполнен успешно.\n");
         st << wxString::FromUTF8("Точек: ")
            << static_cast<unsigned long>(m_lastResults.alpha.size());
         m_resultStatus->SetLabel(st);
 
+        // ШАГ 4: Обновляем данные на графике
         m_plotPanel->SetData(&m_lastResults);
-        m_plotPanel->SetMode(KinematicPlotPanel::Mode::Displacement);
+        m_plotPanel->SetParams(&m_lastParams);
+        m_plotPanel->SetMode(KinematicPlotPanel::Mode::DisplacementMain);
         m_graphTypeChoice->SetSelection(0);
+        
+        // ШАГ 5: ОБНОВЛЯЕМ ВЫПАДАЮЩИЙ СПИСОК ЦИЛИНДРОВ - ПОЛНОСТЬЮ!
+        m_cylinderChoice->Clear();
+        if (params.gamma == 0) {
+        for (int i = 0; i < params.countCyl; ++i) {
+            m_cylinderChoice->Append(wxString::Format(wxString::FromUTF8("Цилиндр %d"), i + 1));}
+        }
+        else {
+        for (int i = 0; i < params.countCyl / 2; ++i) {
+            m_cylinderChoice->Append(wxString::Format(wxString::FromUTF8("Ряд %d"), i + 1));}
+        }
 
+
+        m_cylinderChoice->SetSelection(0);
+        m_cylinderChoice->Enable(true);
+        
+        // ШАГ 6: Сбрасываем чекбокс "Показать все"
+        m_showAllCylindersCheck->SetValue(false);
+        m_plotPanel->SetShowAllCylinders(false);
+        m_plotPanel->SetCurrentCylinder(0);
+
+        // ШАГ 7: Переключаем на страницу результатов
         m_kinematicBook->SetSelection(1);
     }
     catch (...)
@@ -589,18 +863,29 @@ void MainFrame::OnCalculate(wxCommandEvent&)
 void MainFrame::OnGraphTypeChanged(wxCommandEvent&)
 {
     int sel = m_graphTypeChoice->GetSelection();
-    if (sel == 1)
-        m_plotPanel->SetMode(KinematicPlotPanel::Mode::Velocity);
-    else if (sel == 2)
-        m_plotPanel->SetMode(KinematicPlotPanel::Mode::Acceleration);
-    else if (sel == 0)
-        m_plotPanel->SetMode(KinematicPlotPanel::Mode::Displacement);
-    else if (sel == 3 )
+    
+    switch (sel) {
+    case 0:
+        m_plotPanel->SetMode(KinematicPlotPanel::Mode::DisplacementMain);
+        break;
+    case 1:
+        m_plotPanel->SetMode(KinematicPlotPanel::Mode::VelocityMain);
+        break;
+    case 2:
+        m_plotPanel->SetMode(KinematicPlotPanel::Mode::AccelerationMain);
+        break;
+    case 3:
         m_plotPanel->SetMode(KinematicPlotPanel::Mode::DisplacementSide);
-    else if (sel == 4 )
+        break;
+    case 4:
         m_plotPanel->SetMode(KinematicPlotPanel::Mode::VelocitySide);
-    else if (sel == 5 )
+        break;
+    case 5:
         m_plotPanel->SetMode(KinematicPlotPanel::Mode::AccelerationSide);
+        break;
+    default:
+        m_plotPanel->SetMode(KinematicPlotPanel::Mode::DisplacementMain);
+    }
 }
 
 void MainFrame::OnBackToInput(wxCommandEvent& evt)

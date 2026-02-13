@@ -17,6 +17,8 @@ struct EngineParams
     double dezaxial;
     double radcrank1;
     double lengthRod1;
+    double countCyl;
+    double taktnost;
 
     // Конструктор по умолчанию
     EngineParams();
@@ -26,7 +28,6 @@ struct EngineParams
 struct CalculationResults
 {
     // Главный цилиндр
-    std::vector<double> alpha;
     std::vector<double> stroke_full;
     std::vector<double> stroke1;
     std::vector<double> stroke2;
@@ -57,6 +58,40 @@ struct CalculationResults
     std::vector<double> betta_rod_side;
     std::vector<double> omega_rod_side;
     std::vector<double> eps_rod_side;
+
+    std::vector<double> alpha;
+    std::vector<double> firing_angles; // Углы чередования для каждого цилиндра
+    double firing_interval; // Угловой интервал между вспышками
+
+    // Результаты для каждого цилиндра
+    std::vector<std::vector<double>> cylinder_stroke_full;
+    std::vector<std::vector<double>> cylinder_stroke1;
+    std::vector<std::vector<double>> cylinder_stroke2;
+    std::vector<std::vector<double>> cylinder_velocity_full;
+    std::vector<std::vector<double>> cylinder_velocity1;
+    std::vector<std::vector<double>> cylinder_velocity2;
+    std::vector<std::vector<double>> cylinder_acceleration_full;
+    std::vector<std::vector<double>> cylinder_acceleration1;
+    std::vector<std::vector<double>> cylinder_acceleration2;
+    
+    // Угловые перемещения, скорость, ускорение шатуна для каждого цилиндра
+    std::vector<std::vector<double>> cylinder_betta_rod;
+    std::vector<std::vector<double>> cylinder_omega_rod;
+    std::vector<std::vector<double>> cylinder_eps_rod;
+    
+    // Боковые цилиндры (если есть)
+    std::vector<std::vector<double>> cylinder_stroke_full_side;
+    std::vector<std::vector<double>> cylinder_stroke1_side;
+    std::vector<std::vector<double>> cylinder_stroke2_side;
+    std::vector<std::vector<double>> cylinder_velocity_full_side;
+    std::vector<std::vector<double>> cylinder_velocity1_side;
+    std::vector<std::vector<double>> cylinder_velocity2_side;
+    std::vector<std::vector<double>> cylinder_acceleration_full_side;
+    std::vector<std::vector<double>> cylinder_acceleration1_side;
+    std::vector<std::vector<double>> cylinder_acceleration2_side;
+    std::vector<std::vector<double>> cylinder_betta_rod_side;
+    std::vector<std::vector<double>> cylinder_omega_rod_side;
+    std::vector<std::vector<double>> cylinder_eps_rod_side;
 };
 
 #endif

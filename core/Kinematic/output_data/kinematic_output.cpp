@@ -93,92 +93,207 @@ bool KinematicOutput::saveToCSV(const CalculationResults &results,
     // Записываем заголовок
     writeHeader(file, params);
     file << "\n";
+    bool hasSideCylinder = !results.cylinder_stroke_full_side.empty();
 
-    bool hasSideCylinder = !results.stroke_full_side.empty();
+    // Проверяем количество цилиндров
+    size_t numCylinders = results.cylinder_stroke_full.size();
+    if (numCylinders == 0) {
+        cerr << "Ошибка: нет данных о цилиндрах" << endl;
+        return false;
+    }
 
-    // Заголовок таблицы в зависимости от наличия бокового цилиндра
-    if (hasSideCylinder)
-    {
-        file << "alpha[град],"
-             << "stroke_full_main[м];stroke1_main[м];stroke2_main[м];"
-             << "velocity_full_main[м/с];velocity1_main[м/с];velocity2_main[м/с];"
-             << "acceleration_full_main[м/с²];acceleration1_main[м/с²];acceleration2_main[м/с²];"
-             << "betta_rod_main[рад];omega_rod_main[рад/с];eps_rod_main[рад/с²];"
-             << "stroke_full_side[м];stroke1_side[м];stroke2_side[м];"
-             << "velocity_full_side[м/с];velocity1_side[м/с];velocity2_side[м/с];"
-             << "acceleration_full_side[м/с²];acceleration1_side[м/с²];acceleration2_side[м/с²];"
-             << "betta_rod_side[рад];omega_rod_side[рад/с];eps_rod_side[рад/с²]\n";
+    // Определяем количество точек по первому цилиндру
+    size_t dataSize = (numCylinders > 0 && !results.cylinder_stroke_full[0].empty()) 
+                      ? results.cylinder_stroke_full[0].size() : 0;
+    
+    if (dataSize == 0) {
+        cerr << "Ошибка: нет данных для сохранения" << endl;
+        return false;
     }
-    else
+
+    // Заголовок таблицы
+    file << "alpha[град];";
+    
+    // Для каждого цилиндра добавляем колонки
+    if (hasSideCylinder) {
+    for (size_t cyl = 0; cyl < numCylinders / 2; ++cyl)
     {
-        file << "alpha[град];stroke_full[м];stroke1[м];stroke2[м];"
-             << "velocity_full[м/с];velocity1[м/с];velocity2[м/с];"
-             << "acceleration_full[м/с²];acceleration1[м/с²];acceleration2[м/с²];"
-             << "betta_rod[рад];omega_rod[рад/с];eps_rod[рад/с²]\n";
+        file << "cyl" << (cyl+1) << "_stroke_full[м];"
+             << "cyl" << (cyl+1) << "_stroke1[м];"
+             << "cyl" << (cyl+1) << "_stroke2[м];"
+             << "cyl" << (cyl+1) << "_velocity_full[м/с];"
+             << "cyl" << (cyl+1) << "_velocity1[м/с];"
+             << "cyl" << (cyl+1) << "_velocity2[м/с];"
+             << "cyl" << (cyl+1) << "_acceleration_full[м/с²];"
+             << "cyl" << (cyl+1) << "_acceleration1[м/с²];"
+             << "cyl" << (cyl+1) << "_acceleration2[м/с²];"
+             << "cyl" << (cyl+1) << "_betta_rod[рад];"
+             << "cyl" << (cyl+1) << "_omega_rod[рад/с];"
+             << "cyl" << (cyl+1) << "_eps_rod[рад/с²]";
+        
+        // Если есть боковой цилиндр для этого основного
+        if (hasSideCylinder && cyl < results.cylinder_stroke_full_side.size()) {
+            file << ";cyl" << (cyl+1) << "_side_stroke_full[м];"
+                 << "cyl" << (cyl+1) << "_side_stroke1[м];"
+                 << "cyl" << (cyl+1) << "_side_stroke2[м];"
+                 << "cyl" << (cyl+1) << "_side_velocity_full[м/с];"
+                 << "cyl" << (cyl+1) << "_side_velocity1[м/с];"
+                 << "cyl" << (cyl+1) << "_side_velocity2[м/с];"
+                 << "cyl" << (cyl+1) << "_side_acceleration_full[м/с²];"
+                 << "cyl" << (cyl+1) << "_side_acceleration1[м/с²];"
+                 << "cyl" << (cyl+1) << "_side_acceleration2[м/с²];"
+                 << "cyl" << (cyl+1) << "_side_betta_rod[рад];"
+                 << "cyl" << (cyl+1) << "_side_omega_rod[рад/с];"
+                 << "cyl" << (cyl+1) << "_side_eps_rod[рад/с²]";
+        }
+        
+        // Если не последний цилиндр, добавляем разделитель
+        if (cyl != numCylinders - 1) {
+            file << ";";
+        }
     }
+}
+else {
+for (size_t cyl = 0; cyl < numCylinders ; ++cyl)
+    {
+        file << "cyl" << (cyl+1) << "_stroke_full[м];"
+             << "cyl" << (cyl+1) << "_stroke1[м];"
+             << "cyl" << (cyl+1) << "_stroke2[м];"
+             << "cyl" << (cyl+1) << "_velocity_full[м/с];"
+             << "cyl" << (cyl+1) << "_velocity1[м/с];"
+             << "cyl" << (cyl+1) << "_velocity2[м/с];"
+             << "cyl" << (cyl+1) << "_acceleration_full[м/с²];"
+             << "cyl" << (cyl+1) << "_acceleration1[м/с²];"
+             << "cyl" << (cyl+1) << "_acceleration2[м/с²];"
+             << "cyl" << (cyl+1) << "_betta_rod[рад];"
+             << "cyl" << (cyl+1) << "_omega_rod[рад/с];"
+             << "cyl" << (cyl+1) << "_eps_rod[рад/с²]";
+        
+                
+        // Если не последний цилиндр, добавляем разделитель
+        if (cyl != numCylinders - 1) {
+            file << ";";
+        }
+    }
+
+};
+    file << "\n";
 
     // Записываем данные
     file << fixed << setprecision(6);
-    size_t dataSize = results.alpha.size();
+    
     for (size_t i = 0; i < dataSize; ++i)
     {
-        file << results.alpha[i] << ";";
-
-        if (hasSideCylinder)
-        {
-            // Данные для главного цилиндра
-            file << results.stroke_full[i] << ";"
-                 << results.stroke1[i] << ";"
-                 << results.stroke2[i] << ";"
-                 << results.velocity_full[i] << ";"
-                 << results.velocity1[i] << ";"
-                 << results.velocity2[i] << ";"
-                 << results.acceleration_full[i] << ";"
-                 << results.acceleration1[i] << ";"
-                 << results.acceleration2[i] << ";"
-                 << results.betta_rod[i] << ";"
-                 << results.omega_rod[i] << ";"
-                 << results.eps_rod[i] << ";";
-
-            // Данные для бокового цилиндра
-            file << results.stroke_full_side[i] << ";"
-                 << results.stroke1_side[i] << ";"
-                 << results.stroke2_side[i] << ";"
-                 << results.velocity_full_side[i] << ";"
-                 << results.velocity1_side[i] << ";"
-                 << results.velocity2_side[i] << ";"
-                 << results.acceleration_full_side[i] << ";"
-                 << results.acceleration1_side[i] << ";"
-                 << results.acceleration2_side[i] << ";"
-                 << results.betta_rod_side[i] << ";"
-                 << results.omega_rod_side[i] << ";"
-                 << results.eps_rod_side[i];
+        // Угол поворота (alpha одинаков для всех цилиндров)
+        if (i < results.alpha.size()) {
+            file << results.alpha[i] << ";";
+        } else {
+            file << "0.0;";  // Значение по умолчанию если нет alpha
         }
-        else
+
+        // Данные для каждого цилиндра
+        if (hasSideCylinder) {
+        for (size_t cyl = 0; cyl < numCylinders / 2; ++cyl)
         {
-            // Только главный цилиндр
-            file << results.stroke_full[i] << ";"
-                 << results.stroke1[i] << ";"
-                 << results.stroke2[i] << ";"
-                 << results.velocity_full[i] << ";"
-                 << results.velocity1[i] << ";"
-                 << results.velocity2[i] << ";"
-                 << results.acceleration_full[i] << ";"
-                 << results.acceleration1[i] << ";"
-                 << results.acceleration2[i] << ";"
-                 << results.betta_rod[i] << ";"
-                 << results.omega_rod[i] << ";"
-                 << results.eps_rod[i];
+            // Проверяем, что вектор для этого цилиндра существует
+            bool cylHasData = (cyl < results.cylinder_stroke_full.size() && 
+                              i < results.cylinder_stroke_full[cyl].size());
+            
+            // Главный цилиндр
+            if (cylHasData) {
+                file << results.cylinder_stroke_full[cyl][i] << ";"
+                     << results.cylinder_stroke1[cyl][i] << ";"
+                     << results.cylinder_stroke2[cyl][i] << ";"
+                     << results.cylinder_velocity_full[cyl][i] << ";"
+                     << results.cylinder_velocity1[cyl][i] << ";"
+                     << results.cylinder_velocity2[cyl][i] << ";"
+                     << results.cylinder_acceleration_full[cyl][i] << ";"
+                     << results.cylinder_acceleration1[cyl][i] << ";"
+                     << results.cylinder_acceleration2[cyl][i] << ";"
+                     << results.cylinder_betta_rod[cyl][i] << ";"
+                     << results.cylinder_omega_rod[cyl][i] << ";"
+                     << results.cylinder_eps_rod[cyl][i];
+            } else {
+                // Заполняем нулями если данных нет
+                file << "0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0";
+            }
+
+            // Боковой цилиндр (если есть)
+            if (hasSideCylinder && cyl < results.cylinder_stroke_full_side.size()) {
+                bool sideHasData = (i < results.cylinder_stroke_full_side[cyl].size());
+                
+                file << ";";  // Разделитель между главным и боковым
+                
+                if (sideHasData) {
+                    file << results.cylinder_stroke_full_side[cyl][i] << ";"
+                         << results.cylinder_stroke1_side[cyl][i] << ";"
+                         << results.cylinder_stroke2_side[cyl][i] << ";"
+                         << results.cylinder_velocity_full_side[cyl][i] << ";"
+                         << results.cylinder_velocity1_side[cyl][i] << ";"
+                         << results.cylinder_velocity2_side[cyl][i] << ";"
+                         << results.cylinder_acceleration_full_side[cyl][i] << ";"
+                         << results.cylinder_acceleration1_side[cyl][i] << ";"
+                         << results.cylinder_acceleration2_side[cyl][i] << ";"
+                         << results.cylinder_betta_rod_side[cyl][i] << ";"
+                         << results.cylinder_omega_rod_side[cyl][i] << ";"
+                         << results.cylinder_eps_rod_side[cyl][i];
+                } else {
+                    file << "0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0";
+                }
+            }
+            
+            // Разделитель между цилиндрами (кроме последнего)
+            if (cyl != numCylinders - 1) {
+                file << ";";
+            }
         }
+    }//////////////////
+     else {
+for (size_t cyl = 0; cyl < numCylinders; ++cyl)
+        {
+            // Проверяем, что вектор для этого цилиндра существует
+            bool cylHasData = (cyl < results.cylinder_stroke_full.size() && 
+                              i < results.cylinder_stroke_full[cyl].size());
+            
+            // Главный цилиндр
+            if (cylHasData) {
+                file << results.cylinder_stroke_full[cyl][i] << ";"
+                     << results.cylinder_stroke1[cyl][i] << ";"
+                     << results.cylinder_stroke2[cyl][i] << ";"
+                     << results.cylinder_velocity_full[cyl][i] << ";"
+                     << results.cylinder_velocity1[cyl][i] << ";"
+                     << results.cylinder_velocity2[cyl][i] << ";"
+                     << results.cylinder_acceleration_full[cyl][i] << ";"
+                     << results.cylinder_acceleration1[cyl][i] << ";"
+                     << results.cylinder_acceleration2[cyl][i] << ";"
+                     << results.cylinder_betta_rod[cyl][i] << ";"
+                     << results.cylinder_omega_rod[cyl][i] << ";"
+                     << results.cylinder_eps_rod[cyl][i];
+            } else {
+                // Заполняем нулями если данных нет
+                file << "0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0";
+            }
+
+            
+            
+            // Разделитель между цилиндрами (кроме последнего)
+            if (cyl != numCylinders - 1) {
+                file << ";";
+            }
+        }
+     };  
         file << "\n";
     }
 
     file.close();
     cout << "Результаты сохранены в CSV файл: " << outputFilename << endl;
-    if (hasSideCylinder)
-    {
-        cout << "Файл содержит данные для главного и бокового цилиндров." << endl;
+    cout << "Сохранено " << numCylinders << " цилиндров, " 
+         << dataSize << " точек расчета" << endl;
+    
+    if (hasSideCylinder) {
+        cout << "Включая данные боковых цилиндров" << endl;
     }
+
     return true;
 }
 
@@ -193,9 +308,10 @@ bool KinematicOutput::saveToFormattedText(const CalculationResults &results,
         return false;
     }
 
-    string outputFilename = filename.empty() ? PathManager::getOutputDirectory() + "/" + generateFilename("ksm_results") + ".txt" : filename;
+    string outputFilename = filename.empty() 
+        ? PathManager::getOutputDirectory() + "/" + generateFilename("ksm_results") + ".txt" 
+        : filename;
 
-    // Используем правильный разделитель путей для текущей ОС
     filesystem::path outputPath(outputFilename);
     outputFilename = outputPath.make_preferred().string();
 
@@ -205,7 +321,6 @@ bool KinematicOutput::saveToFormattedText(const CalculationResults &results,
     }
 
 #ifdef _WIN32
-    // Для Windows используем широкие символы для поддержки Unicode путей
     wstring widePath = PathManager::utf8ToWide(outputFilename);
     ofstream file(widePath.c_str());
 #else
@@ -218,99 +333,267 @@ bool KinematicOutput::saveToFormattedText(const CalculationResults &results,
         return false;
     }
 
-    // Записываем заголовок
+    // Записываем заголовок с параметрами
     writeHeader(file, params);
-    file << "\n";
+    file << "\n\n";
 
-    bool hasSideCylinder = !results.stroke_full_side.empty();
-
-    // Таблица для главного цилиндра
-    file << "ГЛАВНЫЙ ЦИЛИНДР:\n";
-    file << "==================================================================================================================================\n";
-    file << "|  α [град] |   S полн [м]  |   S1 [м]   |   S2 [м]   |  V полн [м/с] |   V1 [м/с]  |   V2 [м/с]  | A полн [м/с²] |  A1 [м/с²]  |  A2 [м/с²]  |\n";
-    file << "==================================================================================================================================\n";
-
-    // Записываем данные с форматированием
-    file << fixed << setprecision(4);
-    size_t dataSize = results.alpha.size();
-
-    for (size_t i = 0; i < dataSize; ++i)
-    {
-        file << "| " << setw(9) << results.alpha[i] << " | "
-             << setw(12) << results.stroke_full[i] << " | "
-             << setw(10) << results.stroke1[i] << " | "
-             << setw(10) << results.stroke2[i] << " | "
-             << setw(13) << results.velocity_full[i] << " | "
-             << setw(11) << results.velocity1[i] << " | "
-             << setw(11) << results.velocity2[i] << " | "
-             << setw(13) << results.acceleration_full[i] << " | "
-             << setw(11) << results.acceleration1[i] << " | "
-             << setw(11) << results.acceleration2[i] << " |\n";
+    // Определяем количество цилиндров
+    size_t numCylinders = results.cylinder_stroke_full.size();
+    if (numCylinders == 0) {
+        cerr << "Ошибка: нет данных о цилиндрах" << endl;
+        return false;
     }
-    file << "==================================================================================================================================\n";
 
-    file << "УГЛОВОЕ ПЕРЕМЕЩЕНИЕ, СКОРОСТЬ, УСКОРЕНИЕ:\n";
-    file << "==========================================================================\n";
-    file << "|  α [град] |   B [рад]  |   w_rod [рад/с]   |   eps_rod [рад/с²]   |\n";
-    file << "==========================================================================\n";
-
-    for (size_t i = 0; i < dataSize; ++i)
-    {
-        file << "| " << setw(9) << results.alpha[i] << " | "
-             << setw(12) << results.betta_rod[i] << " | "
-             << setw(10) << results.omega_rod[i] << " | "
-             << setw(11) << results.eps_rod[i] << " |\n";
+    // Определяем количество точек по первому цилиндру
+    size_t dataSize = (numCylinders > 0 && !results.cylinder_stroke_full[0].empty()) 
+                      ? results.cylinder_stroke_full[0].size() : 0;
+    
+    if (dataSize == 0) {
+        cerr << "Ошибка: нет данных для сохранения" << endl;
+        return false;
     }
-    file << "==================================================================================================================================\n";
 
-    // Таблица для бокового цилиндра (если есть)
-    if (hasSideCylinder)
+    // Проверяем наличие боковых цилиндров
+    bool hasSideCylinder = !results.cylinder_stroke_full_side.empty();
+
+    // Для каждого цилиндра выводим отдельную таблицу
+    if (hasSideCylinder) {
+    for (size_t cyl = 0; cyl < numCylinders / 2; ++cyl)
     {
-        file << "\n\nБОКОВОЙ ЦИЛИНДР (угол развала " << params.gamma << " град.):\n";
-        file << "==================================================================================================================================\n";
-        file << "|  α [град] |   S полн [м]  |   S1 [м]   |   S2 [м]   |  V полн [м/с] |   V1 [м/с]  |   V2 [м/с]  | A полн [м/с²] |  A1 [м/с²]  |  A2 [м/с²]  |\n";
-        file << "==================================================================================================================================\n";
+        file << "ЦИЛИНДР " << (cyl + 1) << ":\n";
+        file << string(140, '=') << "\n";
+        
+        // Таблица перемещений, скоростей и ускорений
+        file << "| α [град] |   S полн [м]  |   S1 [м]   |   S2 [м]   |  V полн [м/с] |   V1 [м/с]  |   V2 [м/с]  | A полн [м/с²] |  A1 [м/с²]  |  A2 [м/с²]  |\n";
+        file << string(140, '=') << "\n";
 
-        for (size_t i = 0; i < dataSize; ++i)
-        {
-            file << "| " << setw(9) << results.alpha[i] << " | "
-                 << setw(12) << results.stroke_full_side[i] << " | "
-                 << setw(10) << results.stroke1_side[i] << " | "
-                 << setw(10) << results.stroke2_side[i] << " | "
-                 << setw(13) << results.velocity_full_side[i] << " | "
-                 << setw(11) << results.velocity1_side[i] << " | "
-                 << setw(11) << results.velocity2_side[i] << " | "
-                 << setw(13) << results.acceleration_full_side[i] << " | "
-                 << setw(11) << results.acceleration1_side[i] << " | "
-                 << setw(11) << results.acceleration2_side[i] << " |\n";
-        }
-        file << "==================================================================================================================================\n";
-
-        file << "УГЛОВОЕ ПЕРЕМЕЩЕНИЕ, СКОРОСТЬ, УСКОРЕНИЕ:\n";
-        file << "==========================================================================\n";
-        file << "|  α [град] |   B_side [рад]  |   w_rod_side [рад/с]   |   eps_rod_side [рад/с²]   |\n";
-        file << "==========================================================================\n";
-
-        // Записываем данные с форматированием
         file << fixed << setprecision(4);
-        size_t dataSize = results.alpha.size();
+        
+        // Выводим все точки для этого цилиндра
+        for (size_t i = 0; i < dataSize; ++i)
+        {
+            // Проверяем наличие данных
+            bool hasData = (cyl < results.cylinder_stroke_full.size() && 
+                           i < results.cylinder_stroke_full[cyl].size());
+            
+            if (!hasData) continue;
+            
+            // Угол поворота (берем из общего массива alpha или используем индекс)
+            double alpha = 0.0;
+            if (i < results.alpha.size()) {
+                alpha = results.alpha[i];
+            } else {
+                // Если нет общего alpha, вычисляем по шагу
+                alpha = i * params.step_alpha;
+            }
+            
+            file << "| " << setw(7) << alpha << " | "
+                 << setw(12) << results.cylinder_stroke_full[cyl][i] << " | "
+                 << setw(10) << results.cylinder_stroke1[cyl][i] << " | "
+                 << setw(10) << results.cylinder_stroke2[cyl][i] << " | "
+                 << setw(13) << results.cylinder_velocity_full[cyl][i] << " | "
+                 << setw(11) << results.cylinder_velocity1[cyl][i] << " | "
+                 << setw(11) << results.cylinder_velocity2[cyl][i] << " | "
+                 << setw(13) << results.cylinder_acceleration_full[cyl][i] << " | "
+                 << setw(11) << results.cylinder_acceleration1[cyl][i] << " | "
+                 << setw(11) << results.cylinder_acceleration2[cyl][i] << " |\n";
+        }
+        file << string(140, '=') << "\n\n";
+
+        // Таблица угловых параметров шатуна
+        file << "УГЛОВОЕ ПЕРЕМЕЩЕНИЕ, СКОРОСТЬ И УСКОРЕНИЕ ШАТУНА:\n";
+        file << string(80, '=') << "\n";
+        file << "| α [град] |   β [рад]  |   ω шатуна [рад/с]   |   ε шатуна [рад/с²]   |\n";
+        file << string(80, '=') << "\n";
 
         for (size_t i = 0; i < dataSize; ++i)
         {
-            file << "| " << setw(9) << results.alpha[i] << " | "
-                 << setw(12) << results.betta_rod_side[i] << " | "
-                 << setw(10) << results.omega_rod_side[i] << " | "
-                 << setw(11) << results.eps_rod_side[i] << " |\n";
+            bool hasRodData = (cyl < results.cylinder_betta_rod.size() && 
+                              i < results.cylinder_betta_rod[cyl].size());
+            
+            if (!hasRodData) continue;
+            
+            double alpha = 0.0;
+            if (i < results.alpha.size()) {
+                alpha = results.alpha[i];
+            } else {
+                alpha = i * params.step_alpha;
+            }
+            
+            file << "| " << setw(7) << alpha << " | "
+                 << setw(10) << results.cylinder_betta_rod[cyl][i] << " | "
+                 << setw(20) << results.cylinder_omega_rod[cyl][i] << " | "
+                 << setw(20) << results.cylinder_eps_rod[cyl][i] << " |\n";
         }
-        file << "==================================================================================================================================\n";
+        file << string(80, '=') << "\n\n";
+
+        // Если есть боковой цилиндр для этого основного
+        if (hasSideCylinder && cyl < results.cylinder_stroke_full_side.size())
+        {
+            file << "БОКОВОЙ ЦИЛИНДР " << (cyl + 1) << " (угол развала " << params.gamma << "°):\n";
+            file << string(120, '=') << "\n";
+            file << "| α [град] |   S полн [м]  |   S1 [м]   |   S2 [м]   |  V полн [м/с] |   V1 [м/с]  |   V2 [м/с]  | A полн [м/с²] |  A1 [м/с²]  |  A2 [м/с²]  |\n";
+            file << string(120, '=') << "\n";
+
+            for (size_t i = 0; i < dataSize; ++i)
+            {
+                bool hasSideData = (i < results.cylinder_stroke_full_side[cyl].size());
+                
+                if (!hasSideData) continue;
+                
+                double alpha = 0.0;
+                if (i < results.alpha.size()) {
+                    alpha = results.alpha[i];
+                } else {
+                    alpha = i * params.step_alpha;
+                }
+                
+                file << "| " << setw(7) << alpha << " | "
+                     << setw(12) << results.cylinder_stroke_full_side[cyl][i] << " | "
+                     << setw(10) << results.cylinder_stroke1_side[cyl][i] << " | "
+                     << setw(10) << results.cylinder_stroke2_side[cyl][i] << " | "
+                     << setw(13) << results.cylinder_velocity_full_side[cyl][i] << " | "
+                     << setw(11) << results.cylinder_velocity1_side[cyl][i] << " | "
+                     << setw(11) << results.cylinder_velocity2_side[cyl][i] << " | "
+                     << setw(13) << results.cylinder_acceleration_full_side[cyl][i] << " | "
+                     << setw(11) << results.cylinder_acceleration1_side[cyl][i] << " | "
+                     << setw(11) << results.cylinder_acceleration2_side[cyl][i] << " |\n";
+            }
+            file << string(120, '=') << "\n\n";
+
+            // Угловые параметры бокового шатуна
+            file << "УГЛОВОЕ ПЕРЕМЕЩЕНИЕ, СКОРОСТЬ И УСКОРЕНИЕ БОКОВОГО ШАТУНА:\n";
+            file << string(80, '=') << "\n";
+            file << "| α [град] |   β бок [рад]  |   ω бок [рад/с]   |   ε бок [рад/с²]   |\n";
+            file << string(80, '=') << "\n";
+
+            for (size_t i = 0; i < dataSize; ++i)
+            {
+                bool hasSideRodData = (cyl < results.cylinder_betta_rod_side.size() && 
+                                      i < results.cylinder_betta_rod_side[cyl].size());
+                
+                if (!hasSideRodData) continue;
+                
+                double alpha = 0.0;
+                if (i < results.alpha.size()) {
+                    alpha = results.alpha[i];
+                } else {
+                    alpha = i * params.step_alpha;
+                }
+                
+                file << "| " << setw(7) << alpha << " | "
+                     << setw(13) << results.cylinder_betta_rod_side[cyl][i] << " | "
+                     << setw(17) << results.cylinder_omega_rod_side[cyl][i] << " | "
+                     << setw(18) << results.cylinder_eps_rod_side[cyl][i] << " |\n";
+            }
+            file << string(80, '=') << "\n\n";
+        }
+
+        // Разделитель между цилиндрами (если не последний)
+        if (cyl != numCylinders - 1) {
+            file << "\n" << string(80, '*') << "\n\n";
+        }
     }
+}
+else {
+    for (size_t cyl = 0; cyl < numCylinders; ++cyl)
+    {
+        file << "ЦИЛИНДР " << (cyl + 1) << ":\n";
+        file << string(140, '=') << "\n";
+        
+        // Таблица перемещений, скоростей и ускорений
+        file << "| α [град] |   S полн [м]  |   S1 [м]   |   S2 [м]   |  V полн [м/с] |   V1 [м/с]  |   V2 [м/с]  | A полн [м/с²] |  A1 [м/с²]  |  A2 [м/с²]  |\n";
+        file << string(140, '=') << "\n";
+
+        file << fixed << setprecision(4);
+        
+        // Выводим все точки для этого цилиндра
+        for (size_t i = 0; i < dataSize; ++i)
+        {
+            // Проверяем наличие данных
+            bool hasData = (cyl < results.cylinder_stroke_full.size() && 
+                           i < results.cylinder_stroke_full[cyl].size());
+            
+            if (!hasData) continue;
+            
+            // Угол поворота (берем из общего массива alpha или используем индекс)
+            double alpha = 0.0;
+            if (i < results.alpha.size()) {
+                alpha = results.alpha[i];
+            } else {
+                // Если нет общего alpha, вычисляем по шагу
+                alpha = i * params.step_alpha;
+            }
+            
+            file << "| " << setw(7) << alpha << " | "
+                 << setw(12) << results.cylinder_stroke_full[cyl][i] << " | "
+                 << setw(10) << results.cylinder_stroke1[cyl][i] << " | "
+                 << setw(10) << results.cylinder_stroke2[cyl][i] << " | "
+                 << setw(13) << results.cylinder_velocity_full[cyl][i] << " | "
+                 << setw(11) << results.cylinder_velocity1[cyl][i] << " | "
+                 << setw(11) << results.cylinder_velocity2[cyl][i] << " | "
+                 << setw(13) << results.cylinder_acceleration_full[cyl][i] << " | "
+                 << setw(11) << results.cylinder_acceleration1[cyl][i] << " | "
+                 << setw(11) << results.cylinder_acceleration2[cyl][i] << " |\n";
+        }
+        file << string(140, '=') << "\n\n";
+
+        // Таблица угловых параметров шатуна
+        file << "УГЛОВОЕ ПЕРЕМЕЩЕНИЕ, СКОРОСТЬ И УСКОРЕНИЕ ШАТУНА:\n";
+        file << string(80, '=') << "\n";
+        file << "| α [град] |   β [рад]  |   ω шатуна [рад/с]   |   ε шатуна [рад/с²]   |\n";
+        file << string(80, '=') << "\n";
+
+        for (size_t i = 0; i < dataSize; ++i)
+        {
+            bool hasRodData = (cyl < results.cylinder_betta_rod.size() && 
+                              i < results.cylinder_betta_rod[cyl].size());
+            
+            if (!hasRodData) continue;
+            
+            double alpha = 0.0;
+            if (i < results.alpha.size()) {
+                alpha = results.alpha[i];
+            } else {
+                alpha = i * params.step_alpha;
+            }
+            
+            file << "| " << setw(7) << alpha << " | "
+                 << setw(10) << results.cylinder_betta_rod[cyl][i] << " | "
+                 << setw(20) << results.cylinder_omega_rod[cyl][i] << " | "
+                 << setw(20) << results.cylinder_eps_rod[cyl][i] << " |\n";
+        }
+        file << string(80, '=') << "\n\n";
+    }
+}
+
+    // Сводная информация в конце файла
+    file << "\n" << string(60, '=') << "\n";
+    file << "СВОДНАЯ ИНФОРМАЦИЯ:\n";
+    file << string(60, '=') << "\n";
+    file << "• Количество точек расчета: " << dataSize << "\n";
+    file << "• Шаг угла α: " << params.step_alpha << "°\n";
+    file << "• Предел угла α: " << params.end_alpha << "°\n";
+    file << "• Радиус кривошипа: " << params.radcrank << " м\n";
+    file << "• Частота вращения: " << params.n << " об/мин\n";
+    
+    if (params.gamma != 0.0) {
+        file << "• Угол развала: " << params.gamma << "°\n";
+    }
+    if (params.dezaxial != 0.0) {
+        file << "• Дезаксиал: " << params.dezaxial << " м\n";
+    }
+    
+    
 
     file.close();
+    
     cout << "Результаты сохранены в текстовый файл: " << outputFilename << endl;
-    if (hasSideCylinder)
-    {
-        cout << "Файл содержит данные для главного и бокового цилиндров." << endl;
+    cout << "Сохранено " << numCylinders << " цилиндров" << endl;
+    if (hasSideCylinder) {
+        cout << "Включая данные боковых цилиндров" << endl;
     }
+    
     return true;
 }
 

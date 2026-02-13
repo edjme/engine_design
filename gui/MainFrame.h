@@ -5,6 +5,7 @@
 #include <wx/choice.h>
 #include <wx/button.h>
 #include <wx/statline.h>
+#include <wx/checkbox.h>
 
 #include "core/common/common_types.h"
 #include "core/Kinematic/Calculations/kinematic_formulas.h"
@@ -49,11 +50,15 @@ private:
     wxPanel*     m_kinInputPanel  = nullptr;
     wxChoice*    m_ksmTypeChoice  = nullptr;
 
+    wxChoice*    m_CountCylChoice = nullptr;
+    wxChoice*    m_TaktChoice     = nullptr;
     wxTextCtrl*  m_stepAlphaInput = nullptr;
     wxTextCtrl*  m_endAlphaInput  = nullptr;
     wxTextCtrl*  m_radcrankInput  = nullptr;
     wxTextCtrl*  m_lambdaInput    = nullptr;
     wxTextCtrl*  m_nInput         = nullptr;
+    wxChoice* m_CountCylChoiceInline;  // Для рядных двигателей
+wxChoice* m_CountCylChoiceV;       // Для V-образных
 
     wxStaticText* m_gammaLabel     = nullptr;
     wxTextCtrl*   m_gammaInput     = nullptr;
@@ -69,13 +74,16 @@ private:
     wxButton*    m_calcButton     = nullptr;
 
     // страница результата
-    wxPanel*            m_kinResultPanel  = nullptr;
-    wxStaticText*       m_resultStatus    = nullptr;
-    wxChoice*           m_graphTypeChoice = nullptr;
-    KinematicPlotPanel* m_plotPanel       = nullptr;
-    wxButton*           m_backButton      = nullptr;
-    wxButton*           m_saveCSVButton      = nullptr;
-    wxButton*           m_saveTXTButton      = nullptr;
+    wxPanel*            m_kinResultPanel       = nullptr;
+    wxStaticText*       m_resultStatus         = nullptr;
+    wxChoice*           m_graphTypeChoice      = nullptr;
+    wxChoice*           m_cylinderChoice       = nullptr;  // Выбор цилиндра для отображения
+    wxCheckBox*         m_showAllCylindersCheck = nullptr; // Чекбокс "Показать все цилиндры"
+    KinematicPlotPanel* m_plotPanel            = nullptr;
+    wxButton*           m_backButton           = nullptr;
+    wxButton*           m_saveCSVButton        = nullptr;
+    wxButton*           m_saveTXTButton        = nullptr;
+    wxStaticText* m_cylinderLabel = nullptr;  // Метка "Цилиндр:" или "Ряд:"
 
     // --- построение интерфейса ---
     void BuildLayout();
@@ -95,6 +103,8 @@ private:
     void OnKSMTypeChanged(wxCommandEvent& evt);
     void OnCalculate(wxCommandEvent& evt);
     void OnGraphTypeChanged(wxCommandEvent& evt);
+    void OnCylinderChanged(wxCommandEvent& evt);        // Обработчик выбора цилиндра
+    void OnShowAllCylindersChanged(wxCommandEvent& evt); // Обработчик чекбокса "Показать все"
     void OnBackToInput(wxCommandEvent& evt);
     void OnSaveCsv(wxCommandEvent& evt);
     void OnSaveTxt(wxCommandEvent& evt);
