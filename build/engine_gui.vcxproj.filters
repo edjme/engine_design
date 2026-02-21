@@ -13,6 +13,9 @@
     <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\gui\KinematicTablePanel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\gui\dynamic_input.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="C:\Users\aleks\Documents\progs\engine_design\gui\MainFrame.h">
@@ -22,6 +25,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\aleks\Documents\progs\engine_design\gui\KinematicTablePanel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\aleks\Documents\progs\engine_design\gui\dynamic_input.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

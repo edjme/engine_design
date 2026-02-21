@@ -27,7 +27,7 @@ static double niceTickStep(double range, int maxTicks = 8) {
 KinematicPlotPanel::KinematicPlotPanel(wxWindow* parent)
     : wxPanel(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize,
               wxFULL_REPAINT_ON_RESIZE)
-{
+              {
     SetBackgroundStyle(wxBG_STYLE_PAINT);
     SetBackgroundColour(wxColour(0x20, 0x25, 0x2B));
 
@@ -55,6 +55,169 @@ KinematicPlotPanel::KinematicPlotPanel(wxWindow* parent)
     m_showSide = false;
     m_hasValidData = false;
     m_dragging = false;
+    m_previewMode = false;
+}
+
+void KinematicPlotPanel::SetPreviewData(const std::vector<double>& x, const std::vector<double>& y,
+                                        const wxString& xLabel, const wxString& yBaseLabel)
+{
+    m_previewX = x;
+    m_previewY = y;
+    m_previewXLabel = xLabel;
+    m_previewYBaseLabel = yBaseLabel;
+    m_previewMode = true;
+    Refresh();
+}
+
+void KinematicPlotPanel::DrawPreview(wxDC& dc, const wxRect& rect)
+{
+    if (m_previewX.empty() || m_previewY.empty() || m_previewX.size() != m_previewY.size())
+        return;
+
+    // Вычисляем границы
+    double minX = *std::min_element(m_previewX.begin(), m_previewX.end());
+    double maxX = *std::max_element(m_previewX.begin(), m_previewX.end());
+    double minY = *std::min_element(m_previewY.begin(), m_previewY.end());
+    double maxY = *std::max_element(m_previewY.begin(), m_previewY.end());
+
+    if (std::abs(maxY - minY) < 1e-12) {
+        maxY += 1.0;
+        minY -= 1.0;
+    }
+    double yRange = maxY - minY;
+    maxY += yRange * 0.05; // небольшой отступ
+
+    // Определяем масштаб для давления
+    double scaleFactor = 1.0;
+    wxString unitStr = wxString::FromUTF8("Па");
+    if (maxY >= 1e6)
+    {
+        scaleFactor = 1e-6;
+        unitStr = wxString::FromUTF8("МПа");
+    }
+    else if (maxY >= 1e3)
+    {
+        scaleFactor = 1e-3;
+        unitStr = wxString::FromUTF8("кПа");
+    }
+    // Иначе оставляем Па
+
+    wxString yLabel = m_previewYBaseLabel + " (" + unitStr + ")";
+
+    // Сохраняем старые границы и временно устанавливаем новые
+    double oldMinX = m_viewMinX, oldMaxX = m_viewMaxX, oldMinY = m_viewMinY, oldMaxY = m_viewMaxY;
+    bool oldValid = m_hasValidData;
+
+    m_viewMinX = minX; m_viewMaxX = maxX; m_viewMinY = minY; m_viewMaxY = maxY;
+    m_hasValidData = true;
+
+    // --- Оси ---
+    dc.SetPen(wxPen(wxColour(0x80, 0x88, 0x90), 2));
+    // Ось X (горизонтальная)
+    int yZero = static_cast<int>(MapY(0.0, rect) + 0.5);
+    if (m_viewMinY <= 0.0 && m_viewMaxY >= 0.0)
+        dc.DrawLine(rect.GetLeft(), yZero, rect.GetRight(), yZero);
+    else
+        dc.DrawLine(rect.GetLeft(), rect.GetBottom(), rect.GetRight(), rect.GetBottom());
+    
+    // Ось Y (вертикальная)
+    int xZero = static_cast<int>(MapX(0.0, rect) + 0.5);
+    if (m_viewMinX <= 0.0 && m_viewMaxX >= 0.0)
+        dc.DrawLine(xZero, rect.GetTop(), xZero, rect.GetBottom());
+    else
+        dc.DrawLine(rect.GetLeft(), rect.GetTop(), rect.GetLeft(), rect.GetBottom());
+
+    // Стрелки на концах осей (упрощённо)
+    int arrowSize = 6;
+    if (m_viewMinY <= 0.0 && m_viewMaxY >= 0.0) {
+        dc.DrawLine(rect.GetRight(), yZero, rect.GetRight() - arrowSize, yZero - arrowSize/2);
+        dc.DrawLine(rect.GetRight(), yZero, rect.GetRight() - arrowSize, yZero + arrowSize/2);
+    } else {
+        dc.DrawLine(rect.GetRight(), rect.GetBottom(), rect.GetRight() - arrowSize, rect.GetBottom() - arrowSize/2);
+        dc.DrawLine(rect.GetRight(), rect.GetBottom(), rect.GetRight() - arrowSize, rect.GetBottom() + arrowSize/2);
+    }
+    if (m_viewMinX <= 0.0 && m_viewMaxX >= 0.0) {
+        dc.DrawLine(xZero, rect.GetTop(), xZero - arrowSize/2, rect.GetTop() + arrowSize);
+        dc.DrawLine(xZero, rect.GetTop(), xZero + arrowSize/2, rect.GetTop() + arrowSize);
+    } else {
+        dc.DrawLine(rect.GetLeft(), rect.GetTop(), rect.GetLeft() - arrowSize/2, rect.GetTop() + arrowSize);
+        dc.DrawLine(rect.GetLeft(), rect.GetTop(), rect.GetLeft() + arrowSize/2, rect.GetTop() + arrowSize);
+    }
+
+    // Подписи осей
+    dc.SetTextForeground(wxColour(0xC0, 0xC0, 0xC0));
+    dc.DrawText(m_previewXLabel, rect.GetLeft() + rect.GetWidth()/2 - 50, rect.GetBottom() + 20);
+    dc.DrawRotatedText(yLabel, rect.GetLeft() - 70, rect.GetTop() + rect.GetHeight()/2, 90);
+
+    // --- Сетка и метки ---
+    dc.SetPen(wxPen(wxColour(0x45, 0x4B, 0x54), 1, wxPENSTYLE_DOT));
+
+    // Метки по оси X
+    double xTickStep = niceTickStep(maxX - minX, 8);
+    double xStart = ceil(minX / xTickStep) * xTickStep;
+    for (double x = xStart; x <= maxX + 1e-9; x += xTickStep)
+    {
+        int px = static_cast<int>(MapX(x, rect) + 0.5);
+        if (px < rect.GetLeft() || px > rect.GetRight()) continue;
+        // Вертикальная линия сетки
+        dc.DrawLine(px, rect.GetTop(), px, rect.GetBottom());
+        // Засечка
+        dc.SetPen(wxPen(wxColour(0x80, 0x88, 0x90)));
+        int tickY = (m_viewMinY <= 0.0 && m_viewMaxY >= 0.0) ? yZero : rect.GetBottom();
+        dc.DrawLine(px, tickY - 4, px, tickY + 4);
+        // Подпись
+        wxString label = wxString::Format("%.0f", x);
+        wxSize textSize = dc.GetTextExtent(label);
+        dc.SetTextForeground(wxColour(0xE0, 0xE0, 0xE0));
+        int labelY = (tickY == rect.GetBottom()) ? tickY + 5 : tickY - textSize.GetHeight() - 5;
+        dc.DrawText(label, px - textSize.GetWidth() / 2, labelY);
+    }
+
+    // Метки по оси Y (с масштабированием)
+    double yTickStep = niceTickStep(maxY - minY, 8);
+    double yStart = ceil(minY / yTickStep) * yTickStep;
+    for (double y = yStart; y <= maxY; y += yTickStep)
+    {
+        int py = static_cast<int>(MapY(y, rect) + 0.5);
+        if (py < rect.GetTop() || py > rect.GetBottom()) continue;
+        // Горизонтальная линия сетки
+        dc.SetPen(wxPen(wxColour(0x45, 0x4B, 0x54), 1, wxPENSTYLE_DOT));
+        dc.DrawLine(rect.GetLeft(), py, rect.GetRight(), py);
+        // Засечка
+        dc.SetPen(wxPen(wxColour(0x80, 0x88, 0x90)));
+        int tickX = (m_viewMinX <= 0.0 && m_viewMaxX >= 0.0) ? xZero : rect.GetLeft();
+        dc.DrawLine(tickX - 4, py, tickX + 4, py);
+        // Подпись (масштабированная)
+        double displayValue = y * scaleFactor;
+        wxString label;
+        if (yTickStep * scaleFactor >= 0.1)
+            label = wxString::Format("%.2f", displayValue);
+        else
+            label = wxString::Format("%.3f", displayValue);
+        wxSize textSize = dc.GetTextExtent(label);
+        dc.SetTextForeground(wxColour(0xE0, 0xE0, 0xE0));
+        int labelX = (tickX == rect.GetLeft()) ? tickX - textSize.GetWidth() - 8 : tickX + 8;
+        dc.DrawText(label, labelX, py - textSize.GetHeight() / 2);
+    }
+
+    // --- Кривая давления (масштабирование не требуется, т.к. координаты уже в данных) ---
+    dc.SetPen(wxPen(wxColour(0xFF, 0xAA, 0x00), 2));
+    wxPoint prev = MapPoint(m_previewX[0], m_previewY[0], rect);
+    for (size_t i = 1; i < m_previewX.size(); ++i)
+    {
+        wxPoint cur = MapPoint(m_previewX[i], m_previewY[i], rect);
+        dc.DrawLine(prev, cur);
+        prev = cur;
+    }
+
+    // Рамка
+    dc.SetPen(wxPen(wxColour(0xB0, 0xB8, 0xC0), 2));
+    dc.SetBrush(*wxTRANSPARENT_BRUSH);
+    dc.DrawRectangle(rect);
+
+    // Восстанавливаем старые границы
+    m_viewMinX = oldMinX; m_viewMaxX = oldMaxX; m_viewMinY = oldMinY; m_viewMaxY = oldMaxY;
+    m_hasValidData = oldValid;
 }
 
 void KinematicPlotPanel::SetData(const CalculationResults* results)
@@ -93,6 +256,8 @@ void KinematicPlotPanel::OnPaint(wxPaintEvent& evt)
     wxAutoBufferedPaintDC dc(this);
     dc.Clear();
 
+    
+
     wxSize sz = GetClientSize();
     if (sz.GetWidth() < 50 || sz.GetHeight() < 50)
         return;
@@ -108,6 +273,12 @@ void KinematicPlotPanel::OnPaint(wxPaintEvent& evt)
         sz.GetWidth()  - marginLeft - marginRight,
         sz.GetHeight() - marginTop  - marginBottom
     );
+
+    if (m_previewMode)
+{
+    DrawPreview(dc, plotRect);
+    return;
+}
 
     dc.SetTextForeground(wxColour(0xC0, 0xC0, 0xC0));
     dc.SetPen(wxPen(wxColour(0x50, 0x58, 0x60)));

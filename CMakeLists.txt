@@ -6,25 +6,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(wxWidgets CONFIG REQUIRED)
 
-# --- core (логика расчётов) ---
+# ============================================================
+# Библиотека core (вся логика расчётов)
+# ============================================================
 
-# Все .cpp внутри core/
-file(GLOB_RECURSE CORE_SOURCES
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/*.cpp"
-)
-
-# Убираем консольные main-файлы, они нам не нужны в библиотеке
-list(REMOVE_ITEM CORE_SOURCES
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/Kinematic/Calculations/main_kinematic.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/IND_Diagr/calculations/ind_diagr_main.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/Diag_Palpha/Calculations/main_Palpha.cpp"
-)
-
-# ЯВНО ДОБАВЛЯЕМ НОВЫЕ ФАЙЛЫ МОДЕЛЕЙ (если GLOB их не подхватил)
-# Но GLOB должен подхватить, если они лежат в правильных папках.
-# Для надёжности можно добавить конкретные пути:
-
-set(KINEMATIC_MODELS_SOURCES
+# Явно перечисляем все исходники core, чтобы избежать проблем с GLOB
+set(CORE_SOURCES
+    # Kinematic models
     "${CMAKE_CURRENT_SOURCE_DIR}/core/Kinematic/Calculations/models/AxialKSMModel.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/Kinematic/Calculations/models/DeaxialKSMModel.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/Kinematic/Calculations/models/VShapedKSMModel.cpp"
@@ -32,12 +20,19 @@ set(KINEMATIC_MODELS_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/core/Kinematic/Calculations/models/VShapedAttachedKSMModel.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/Kinematic/Calculations/models/VShapedAttachedDeaxialKSMModel.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/Kinematic/Calculations/models/KSMModel.cpp"
+    # Kinematic calculator
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/Kinematic/Calculations/KinematicCalculator.cpp"
+    # Kinematic formulas (старый код)
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/Kinematic/Calculations/kinematic_formulas.cpp"
+    # Input/output
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/Kinematic/input_data/kinematic_input.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/Kinematic/output_data/kinematic_output.cpp"
+    # Dynamic calculator
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/Dynamic/Calculations/DynamicCalculator.cpp"
+    # Другие файлы core (если есть) можно добавить сюда же
 )
 
-# Добавляем их в CORE_SOURCES
-list(APPEND CORE_SOURCES ${KINEMATIC_MODELS_SOURCES})
-
-# Отдельно добавляем файлы менеджера путей (они лежат в корне)
+# Файлы менеджера путей (лежат в корне проекта)
 set(PATH_MANAGER_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/path_manager.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/ind_path_manager.cpp"
@@ -54,7 +49,9 @@ target_include_directories(engine_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/core
 )
 
-# --- GUI-приложение ---
+# ============================================================
+# Исполняемый файл GUI
+# ============================================================
 
 add_executable(engine_gui WIN32
     gui/main_gui.cpp
@@ -64,6 +61,8 @@ add_executable(engine_gui WIN32
     gui/KinematicPlotPanel.h
     gui/KinematicTablePanel.cpp      
     gui/KinematicTablePanel.h
+    gui/dynamic_input.cpp
+    gui/dynamic_input.h
 )
 
 target_link_libraries(engine_gui PRIVATE

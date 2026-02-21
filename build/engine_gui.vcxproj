@@ -432,6 +432,8 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClInclude Include="C:\Users\aleks\Documents\progs\engine_design\gui\KinematicPlotPanel.h" />
     <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\gui\KinematicTablePanel.cpp" />
     <ClInclude Include="C:\Users\aleks\Documents\progs\engine_design\gui\KinematicTablePanel.h" />
+    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\gui\dynamic_input.cpp" />
+    <ClInclude Include="C:\Users\aleks\Documents\progs\engine_design\gui\dynamic_input.h" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>

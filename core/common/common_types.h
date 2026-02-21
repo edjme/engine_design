@@ -7,6 +7,7 @@
 // Структура для параметров расчета для кинематики
 struct EngineParams
 {
+    EngineParams() = default;
     double step_alpha;
     double end_alpha;
     double radcrank;
@@ -20,8 +21,6 @@ struct EngineParams
     double countCyl;
     double taktnost;
 
-    // Конструктор по умолчанию
-    EngineParams();
 };
 
 // Структура для результатов расчетов кинематики
@@ -92,6 +91,51 @@ struct CalculationResults
     std::vector<std::vector<double>> cylinder_betta_rod_side;
     std::vector<std::vector<double>> cylinder_omega_rod_side;
     std::vector<std::vector<double>> cylinder_eps_rod_side;
+};
+
+struct DynamicResults {
+    // Для каждого цилиндра (векторы векторов)
+    std::vector<std::vector<double>> gas_force;        // сила давления газов, Н
+    std::vector<std::vector<double>> inertia_force;    // сила инерции, Н
+    std::vector<std::vector<double>> total_force;      // суммарная сила, Н
+    std::vector<std::vector<double>> rod_force;        // сила вдоль шатуна, Н
+    std::vector<std::vector<double>> tangential_force; // тангенциальная сила, Н
+    std::vector<std::vector<double>> radial_force;     // радиальная сила, Н
+    std::vector<std::vector<double>> cylinder_torque;  // крутящий момент от одного цилиндра, Н·м
+
+    // Суммарный момент двигателя (один вектор по углам)
+    std::vector<double> total_torque;                   // Н·м
+
+    // Для первого цилиндра (для обратной совместимости при отображении)
+    std::vector<double> gas_force_cyl0;
+    std::vector<double> inertia_force_cyl0;
+    std::vector<double> total_force_cyl0;
+    std::vector<double> rod_force_cyl0;
+    std::vector<double> tangential_force_cyl0;
+    std::vector<double> radial_force_cyl0;
+    std::vector<double> cylinder_torque_cyl0;
+
+    // Параметры, использованные при расчёте
+    double piston_area;        // площадь поршня, м²
+    double mass_reciprocating; // возвратно-поступательная масса, кг
+
+    void clear() {
+        gas_force.clear();
+        inertia_force.clear();
+        total_force.clear();
+        rod_force.clear();
+        tangential_force.clear();
+        radial_force.clear();
+        cylinder_torque.clear();
+        total_torque.clear();
+        gas_force_cyl0.clear();
+        inertia_force_cyl0.clear();
+        total_force_cyl0.clear();
+        rod_force_cyl0.clear();
+        tangential_force_cyl0.clear();
+        radial_force_cyl0.clear();
+        cylinder_torque_cyl0.clear();
+    }
 };
 
 #endif

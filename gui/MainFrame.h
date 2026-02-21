@@ -144,5 +144,51 @@ void OnLoadSession(wxCommandEvent& evt);
 bool SaveSessionToFile(const wxString& filename);
 bool LoadSessionFromFile(const wxString& filename);
 
-    wxDECLARE_EVENT_TABLE();
+
+// Параметры динамики
+std::vector<double> m_dynPressureAngles;
+std::vector<double> m_dynPressureValues;
+wxString m_dynPressureFile;
+
+// Элементы управления динамикой
+wxChoice* m_dynUnitChoice;
+wxButton* m_dynLoadBtn;
+wxStaticText* m_dynFileLabel;
+KinematicPlotPanel* m_dynPreviewPlot;
+wxButton* m_dynCalcBtn;
+
+wxTextCtrl* m_massPistonInput;
+wxTextCtrl* m_massRodInput;
+wxTextCtrl* m_kRodOscInput;
+
+// Методы
+void BuildDynamicPages(wxPanel* parent);
+void OnLoadPressure(wxCommandEvent& evt);
+void OnCalculateDynamic(wxCommandEvent& evt);
+
+DynamicResults m_dynResults;
+
+wxSimplebook* m_dynamicBook;
+wxPanel* m_dynInputPage;
+wxPanel* m_dynResultPage;
+
+void BuildDynamicInputPage(wxPanel* parent);
+void BuildDynamicResultPage(wxPanel* parent);
+
+KinematicPlotPanel* m_dynPlotResult;
+
+wxNotebook* m_dynResultBook;
+wxPanel* m_dynGraphPage;
+wxPanel* m_dynTablePage;
+wxGrid* m_dynGrid;
+wxChoice* m_dynGraphTypeChoice;
+
+void OnDynGraphTypeChanged(wxCommandEvent& evt);
+
+wxTextCtrl* m_dynBoreInput;
+void OnDynamicBackToInput(wxCommandEvent& evt);
+
+
+
+wxDECLARE_EVENT_TABLE();
 };

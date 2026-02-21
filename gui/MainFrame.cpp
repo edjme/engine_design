@@ -1,5 +1,6 @@
 #include "MainFrame.h"
 #include "core\Kinematic\Calculations\KinematicCalculator.h"
+#include "core/Dynamic/Calculations/DynamicCalculator.h"
 
 #include <wx/sizer.h>
 #include <wx/filedlg.h>
@@ -15,6 +16,10 @@
 #include <wx/tokenzr.h>
 #include <wx/progdlg.h>
 #include <wx/settings.h>
+#include "dynamic_input.h"
+#include <wx/filename.h>
+#include <wx/textfile.h>
+#include <wx/tokenzr.h>
 
 using namespace std;
 
@@ -38,6 +43,11 @@ enum
     ID_LoadTemplateBtn,
     ID_SaveSessionBtn,
     ID_LoadSessionBtn,
+    ID_DynUnitChoice,
+    ID_DynLoadBtn,
+    ID_DynCalcBtn,
+    ID_DynGraphTypeChoice,
+    ID_DynBackBtn,
     ID_ResetZoom
     
 };
@@ -60,6 +70,10 @@ wxBEGIN_EVENT_TABLE(MainFrame, wxFrame)
     EVT_BUTTON(ID_LoadTemplateBtn, MainFrame::OnLoadTemplate)
     EVT_BUTTON(ID_SaveSessionBtn, MainFrame::OnSaveSession)
     EVT_BUTTON(ID_LoadSessionBtn, MainFrame::OnLoadSession)
+    EVT_BUTTON(ID_DynLoadBtn, MainFrame::OnLoadPressure)
+    EVT_BUTTON(ID_DynCalcBtn, MainFrame::OnCalculateDynamic)
+    EVT_CHOICE(ID_DynGraphTypeChoice, MainFrame::OnDynGraphTypeChanged)
+    EVT_BUTTON(ID_DynBackBtn, MainFrame::OnDynamicBackToInput)
 wxEND_EVENT_TABLE()
 
 MainFrame::MainFrame(const wxString& title)
@@ -94,14 +108,11 @@ void MainFrame::BuildLayout()
     BuildKinematicPages(kinPage);
     m_rightBook->AddPage(kinPage, wxString::FromUTF8("Расчёт кинематики"), true);
 
-    // Страница динамики (заглушка)
+    // Страница динамики 
     auto* dynPage = new wxPanel(m_rightBook);
     ApplyDarkTheme(dynPage);
-    auto* dynSizer = new wxBoxSizer(wxVERTICAL);
-    dynSizer->Add(new wxStaticText(dynPage, wxID_ANY, wxString::FromUTF8("РАСЧЁТ ДИНАМИКИ — в разработке")),
-                  0, wxALL, 20);
-    dynPage->SetSizer(dynSizer);
-    m_rightBook->AddPage(dynPage, wxString::FromUTF8("Расчёт динамики"), false);
+    BuildDynamicPages(dynPage);
+m_rightBook->AddPage(dynPage, wxString::FromUTF8("Расчёт динамики"), false);
 
     auto* rightSizer = new wxBoxSizer(wxVERTICAL);
     rightSizer->Add(m_rightBook, 1, wxEXPAND | wxALL, 10);
@@ -704,6 +715,400 @@ bool MainFrame::ReadParamsFromUI(EngineParams& p, wxString& err)
     return true;
 }
 
+void MainFrame::BuildDynamicPages(wxPanel* parent)
+{
+    auto* vbox = new wxBoxSizer(wxVERTICAL);
+
+    // Заголовок
+    auto* title = new wxStaticText(parent, wxID_ANY, wxString::FromUTF8("РАСЧЁТ ДИНАМИКИ"));
+    title->SetForegroundColour(*wxWHITE);
+    title->SetFont(wxFontInfo(16).Bold());
+    vbox->Add(title, 0, wxALL, 10);
+    vbox->Add(new wxStaticLine(parent), 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 10);
+
+    // Книжка ввод/результат
+    m_dynamicBook = new wxSimplebook(parent, wxID_ANY);
+    ApplyDarkTheme(m_dynamicBook);
+
+    // Страница ввода
+    m_dynInputPage = new wxPanel(m_dynamicBook);
+    ApplyDarkTheme(m_dynInputPage);
+    BuildDynamicInputPage(m_dynInputPage);
+
+    // Страница результатов (пока заглушка)
+    m_dynResultPage = new wxPanel(m_dynamicBook);
+    ApplyDarkTheme(m_dynResultPage);
+    BuildDynamicResultPage(m_dynResultPage);
+
+    m_dynamicBook->AddPage(m_dynInputPage, wxString::FromUTF8("Ввод параметров"), true);
+    m_dynamicBook->AddPage(m_dynResultPage, wxString::FromUTF8("Результаты"), false);
+
+    vbox->Add(m_dynamicBook, 1, wxEXPAND | wxALL, 5);
+    parent->SetSizer(vbox);
+}
+
+void MainFrame::BuildDynamicInputPage(wxPanel* parent)
+{
+    auto* vbox = new wxBoxSizer(wxVERTICAL);
+
+    // Группа "Массы"
+    auto* massBox = new wxStaticBoxSizer(wxVERTICAL, parent, wxString::FromUTF8("Массы деталей"));
+    ApplyDarkTheme(massBox->GetStaticBox());
+
+    auto* massGrid = new wxFlexGridSizer(0, 2, 8, 12);
+    massGrid->AddGrowableCol(1, 1);
+
+    auto addMassRow = [&](const wxString& label, wxTextCtrl*& ctrl, const wxString& def, const wxString& tooltip) {
+        auto* lbl = new wxStaticText(parent, wxID_ANY, label);
+        massGrid->Add(lbl, 0, wxALIGN_CENTER_VERTICAL);
+        ctrl = new wxTextCtrl(parent, wxID_ANY, def);
+        ctrl->SetToolTip(tooltip);
+        massGrid->Add(ctrl, 1, wxEXPAND);
+        ApplyDarkTheme(lbl);
+        ApplyDarkTheme(ctrl);
+    };
+
+    addMassRow(wxString::FromUTF8("Масса поршня, кг:"), m_massPistonInput, "0.5",
+               wxString::FromUTF8("Масса поршня в сборе"));
+    addMassRow(wxString::FromUTF8("Масса шатуна, кг:"), m_massRodInput, "0.8",
+               wxString::FromUTF8("Полная масса шатуна"));
+    addMassRow(wxString::FromUTF8("Доля возвратно-поступат. массы шатуна:"), m_kRodOscInput, "0.3",
+               wxString::FromUTF8("Обычно 0.3–0.4, остальное — вращающаяся часть"));
+    addMassRow(wxString::FromUTF8("Диаметр цилиндра, м^2:"), m_dynBoreInput, "0.08",
+           wxString::FromUTF8("Диаметр цилиндра (для расчёта площади поршня)"));
+
+    massBox->Add(massGrid, 0, wxEXPAND | wxALL, 5);
+    vbox->Add(massBox, 0, wxEXPAND | wxALL, 10);
+
+    // Группа "Давление газов"
+    auto* pressureBox = new wxStaticBoxSizer(wxVERTICAL, parent, wxString::FromUTF8("Давление газов"));
+    ApplyDarkTheme(pressureBox->GetStaticBox());
+
+    auto* pressureGrid = new wxFlexGridSizer(0, 3, 8, 12);
+    pressureGrid->AddGrowableCol(1, 1);
+
+    pressureGrid->Add(new wxStaticText(parent, wxID_ANY, wxString::FromUTF8("Единицы измерения:")),
+                      0, wxALIGN_CENTER_VERTICAL);
+
+    wxArrayString unitNames;
+    unitNames.Add(wxString::FromUTF8("бар"));
+    unitNames.Add(wxString::FromUTF8("МПа"));
+    unitNames.Add(wxString::FromUTF8("кПа"));
+    unitNames.Add(wxString::FromUTF8("PSI"));
+    m_dynUnitChoice = new wxChoice(parent, ID_DynUnitChoice, wxDefaultPosition, wxSize(100, -1), unitNames);
+    m_dynUnitChoice->SetSelection(0);
+    ApplyDarkTheme(m_dynUnitChoice);
+    pressureGrid->Add(m_dynUnitChoice, 0, wxALIGN_CENTER_VERTICAL);
+    pressureGrid->AddStretchSpacer();
+
+    pressureGrid->Add(new wxStaticText(parent, wxID_ANY, wxString::FromUTF8("Файл:")),
+                      0, wxALIGN_CENTER_VERTICAL);
+
+    m_dynFileLabel = new wxStaticText(parent, wxID_ANY, wxString::FromUTF8("не выбран"));
+    ApplyDarkTheme(m_dynFileLabel);
+    pressureGrid->Add(m_dynFileLabel, 1, wxEXPAND | wxALIGN_CENTER_VERTICAL);
+
+    m_dynLoadBtn = new wxButton(parent, ID_DynLoadBtn, wxString::FromUTF8("Обзор..."));
+    ApplyDarkTheme(m_dynLoadBtn);
+    pressureGrid->Add(m_dynLoadBtn, 0, wxALIGN_CENTER_VERTICAL);
+
+    pressureBox->Add(pressureGrid, 0, wxEXPAND | wxALL, 5);
+
+    // Предварительный просмотр
+    auto* previewLabel = new wxStaticText(parent, wxID_ANY, wxString::FromUTF8("Предварительный просмотр:"));
+    ApplyDarkTheme(previewLabel);
+    pressureBox->Add(previewLabel, 0, wxTOP | wxLEFT | wxRIGHT, 10);
+
+    m_dynPreviewPlot = new KinematicPlotPanel(parent);
+    m_dynPreviewPlot->SetMinSize(wxSize(400, 200));
+    ApplyDarkTheme(m_dynPreviewPlot);
+    pressureBox->Add(m_dynPreviewPlot, 1, wxEXPAND | wxALL, 10);
+
+    vbox->Add(pressureBox, 1, wxEXPAND | wxALL, 10);
+
+    // Кнопка расчёта
+    m_dynCalcBtn = new wxButton(parent, ID_DynCalcBtn, wxString::FromUTF8("РАССЧИТАТЬ ДИНАМИКУ"));
+    ApplyDarkTheme(m_dynCalcBtn);
+    vbox->Add(m_dynCalcBtn, 0, wxALIGN_RIGHT | wxRIGHT | wxBOTTOM, 20);
+
+    parent->SetSizer(vbox);
+}
+
+void MainFrame::BuildDynamicResultPage(wxPanel* parent)
+{
+    auto* sizer = new wxBoxSizer(wxVERTICAL);
+    
+    // Книжка вкладок
+    m_dynResultBook = new wxNotebook(parent, wxID_ANY);
+    ApplyDarkTheme(m_dynResultBook);
+    m_dynResultBook->SetBackgroundColour(wxColour(0x25, 0x2A, 0x30));
+
+    // --- Вкладка "График" ---
+    m_dynGraphPage = new wxPanel(m_dynResultBook);
+    ApplyDarkTheme(m_dynGraphPage);
+    auto* graphSizer = new wxBoxSizer(wxVERTICAL);
+    
+    // Панель управления графиком (выбор величины)
+    auto* graphCtrlSizer = new wxBoxSizer(wxHORIZONTAL);
+    graphCtrlSizer->Add(new wxStaticText(m_dynGraphPage, wxID_ANY, wxString::FromUTF8("Отобразить:")),
+                        0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
+    
+    wxArrayString graphTypes;
+    graphTypes.Add(wxString::FromUTF8("Суммарный момент двигателя"));
+    graphTypes.Add(wxString::FromUTF8("Сила газов (цил.1)"));
+    graphTypes.Add(wxString::FromUTF8("Сила инерции (цил.1)"));
+    graphTypes.Add(wxString::FromUTF8("Суммарная сила (цил.1)"));
+    graphTypes.Add(wxString::FromUTF8("Тангенциальная сила (цил.1)"));
+    graphTypes.Add(wxString::FromUTF8("Радиальная сила (цил.1)"));
+    graphTypes.Add(wxString::FromUTF8("Момент цилиндра (цил.1)"));
+    
+    m_dynGraphTypeChoice = new wxChoice(m_dynGraphPage, ID_DynGraphTypeChoice,
+                                        wxDefaultPosition, wxSize(200, -1), graphTypes);
+    m_dynGraphTypeChoice->SetSelection(0);
+    ApplyDarkTheme(m_dynGraphTypeChoice);
+    graphCtrlSizer->Add(m_dynGraphTypeChoice, 0, wxALIGN_CENTER_VERTICAL);
+    
+    graphSizer->Add(graphCtrlSizer, 0, wxALL | wxEXPAND, 5);
+    
+    // Панель графика
+    m_dynPlotResult = new KinematicPlotPanel(m_dynGraphPage);
+    ApplyDarkTheme(m_dynPlotResult);
+    graphSizer->Add(m_dynPlotResult, 1, wxEXPAND | wxALL, 5);
+    
+    m_dynGraphPage->SetSizer(graphSizer);
+    m_dynResultBook->AddPage(m_dynGraphPage, wxString::FromUTF8("График"), true);
+
+    // --- Вкладка "Таблица" ---
+    m_dynTablePage = new wxPanel(m_dynResultBook);
+    ApplyDarkTheme(m_dynTablePage);
+    auto* tableSizer = new wxBoxSizer(wxVERTICAL);
+    
+    m_dynGrid = new wxGrid(m_dynTablePage, wxID_ANY);
+    m_dynGrid->CreateGrid(0, 8); // 8 колонок
+    m_dynGrid->SetColLabelValue(0, wxString::FromUTF8("α, град"));
+    m_dynGrid->SetColLabelValue(1, wxString::FromUTF8("Сила газов, Н"));
+    m_dynGrid->SetColLabelValue(2, wxString::FromUTF8("Сила инерции, Н"));
+    m_dynGrid->SetColLabelValue(3, wxString::FromUTF8("Суммарная сила, Н"));
+    m_dynGrid->SetColLabelValue(4, wxString::FromUTF8("Тангенц. сила, Н"));
+    m_dynGrid->SetColLabelValue(5, wxString::FromUTF8("Радиальная сила, Н"));
+    m_dynGrid->SetColLabelValue(6, wxString::FromUTF8("Момент цил., Н·м"));
+    m_dynGrid->SetColLabelValue(7, wxString::FromUTF8("Сумм. момент, Н·м"));
+    
+    m_dynGrid->SetBackgroundColour(wxColour(0x25, 0x2A, 0x30));
+    m_dynGrid->SetLabelBackgroundColour(wxColour(0x18, 0x1C, 0x22));
+    m_dynGrid->SetLabelTextColour(wxColour(0xE0, 0xE0, 0xE0));
+    m_dynGrid->SetDefaultCellBackgroundColour(wxColour(0x25, 0x2A, 0x30));
+    m_dynGrid->SetDefaultCellTextColour(wxColour(0xF0, 0xF0, 0xF0));
+    m_dynGrid->EnableEditing(false);
+    m_dynGrid->AutoSizeColumns();
+    
+    tableSizer->Add(m_dynGrid, 1, wxEXPAND | wxALL, 5);
+    m_dynTablePage->SetSizer(tableSizer);
+    m_dynResultBook->AddPage(m_dynTablePage, wxString::FromUTF8("Таблица"), false);
+
+    sizer->Add(m_dynResultBook, 1, wxEXPAND | wxALL, 5);
+    parent->SetSizer(sizer);
+
+    auto* bottomSizer = new wxBoxSizer(wxHORIZONTAL);
+wxButton* dynBackBtn = new wxButton(parent, ID_DynBackBtn, wxString::FromUTF8("← Назад"));
+ApplyDarkTheme(dynBackBtn);
+bottomSizer->Add(dynBackBtn, 0, wxRIGHT, 10);
+sizer->Add(bottomSizer, 0, wxALIGN_LEFT | wxALL, 10);
+}
+
+void MainFrame::OnDynGraphTypeChanged(wxCommandEvent&)
+{
+    if (m_dynResults.total_torque.empty()) return;
+
+    int sel = m_dynGraphTypeChoice->GetSelection();
+    std::vector<double>* data = nullptr;
+    wxString yLabel;
+
+    switch (sel)
+    {
+    case 0: data = &m_dynResults.total_torque; yLabel = wxString::FromUTF8("Крутящий момент, Н·м"); break;
+    case 1: data = &m_dynResults.gas_force_cyl0; yLabel = wxString::FromUTF8("Сила газов, Н"); break;
+    case 2: data = &m_dynResults.inertia_force_cyl0; yLabel = wxString::FromUTF8("Сила инерции, Н"); break;
+    case 3: data = &m_dynResults.total_force_cyl0; yLabel = wxString::FromUTF8("Суммарная сила, Н"); break;
+    case 4: data = &m_dynResults.tangential_force_cyl0; yLabel = wxString::FromUTF8("Тангенциальная сила, Н"); break;
+    case 5: data = &m_dynResults.radial_force_cyl0; yLabel = wxString::FromUTF8("Радиальная сила, Н"); break;
+    case 6: data = &m_dynResults.cylinder_torque_cyl0; yLabel = wxString::FromUTF8("Момент цилиндра, Н·м"); break;
+    default: return;
+    }
+
+    if (data && !data->empty())
+    {
+        m_dynPlotResult->SetPreviewData(m_lastResults.alpha, *data,
+                                        wxString::FromUTF8("Угол, град"), yLabel);
+    }
+}
+
+void MainFrame::OnLoadPressure(wxCommandEvent&)
+{
+    wxFileDialog dlg(this, wxString::FromUTF8("Выберите файл с индикаторной диаграммой"),
+                     "", "", "CSV files (*.csv)|*.csv|Text files (*.txt)|*.txt|All files (*.*)|*.*",
+                     wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+    if (dlg.ShowModal() != wxID_OK) return;
+
+    wxString path = dlg.GetPath();
+
+    PressureUnit unit = PressureUnit::BAR;
+    int sel = m_dynUnitChoice->GetSelection();
+    switch (sel)
+    {
+    case 0: unit = PressureUnit::BAR; break;
+    case 1: unit = PressureUnit::MPA; break;
+    case 2: unit = PressureUnit::KPA; break;
+    case 3: unit = PressureUnit::PSI; break;
+    }
+
+    std::vector<double> angles, pressures;
+    wxString errorMsg;
+    if (!LoadPressureFromFile(path, angles, pressures, errorMsg, unit))
+    {
+        wxMessageBox(errorMsg, wxString::FromUTF8("Ошибка загрузки"), wxOK | wxICON_ERROR, this);
+        return;
+    }
+
+    m_dynPressureAngles = angles;
+    m_dynPressureValues = pressures;
+    m_dynPressureFile = path;
+
+    if (angles.empty() || pressures.empty() || angles.size() != pressures.size())
+{
+    wxMessageBox(wxString::FromUTF8("Ошибка: данные пусты или некорректны"));
+    return;
+}
+
+    m_dynFileLabel->SetLabel(wxString::FromUTF8("Загружено: ") + wxFileName(path).GetFullName());
+
+    // Обновление предварительного графика – будет реализовано позже
+    wxMessageBox(wxString::FromUTF8("Данные успешно загружены.\nКоличество точек: ") + 
+                 wxString::Format("%zu", angles.size()),
+                 wxString::FromUTF8("Успех"), wxOK | wxICON_INFORMATION, this);
+
+    m_dynPreviewPlot->SetPreviewData(angles, pressures,
+    wxString::FromUTF8("Угол, град"),
+    wxString::FromUTF8("Давление"));
+
+    wxString debugMsg;
+debugMsg << wxString::FromUTF8("Загружено точек: ") << angles.size() << "\n";
+debugMsg << wxString::FromUTF8("Первые 10 значений:\n");
+for (size_t i = 0; i < std::min(size_t(10), angles.size()); ++i)
+{
+    debugMsg << wxString::Format(wxString::FromUTF8("  угол = %.3f, давление = %.3f Па\n"), angles[i], pressures[i]);
+}
+wxMessageBox(debugMsg, wxString::FromUTF8("Отладка"), wxOK | wxICON_INFORMATION);
+}
+
+void MainFrame::OnCalculateDynamic(wxCommandEvent&)
+{
+    // Проверка наличия кинематических результатов
+    if (!m_hasResults)
+    {
+        wxMessageBox(wxString::FromUTF8("Сначала выполните расчёт кинематики."),
+                     wxString::FromUTF8("Ошибка"), wxOK | wxICON_ERROR, this);
+        return;
+    }
+
+    // Проверка загрузки файла давления
+    if (m_dynPressureAngles.empty())
+    {
+        wxMessageBox(wxString::FromUTF8("Загрузите файл с индикаторной диаграммой."),
+                     wxString::FromUTF8("Ошибка"), wxOK | wxICON_ERROR, this);
+        return;
+    }
+
+    // Чтение масс из полей ввода
+    double massPiston, massRod, kRodOsc;
+    if (!m_massPistonInput->GetValue().ToDouble(&massPiston) ||
+        !m_massRodInput->GetValue().ToDouble(&massRod) ||
+        !m_kRodOscInput->GetValue().ToDouble(&kRodOsc))
+    {
+        wxMessageBox(wxString::FromUTF8("Проверьте введённые массы."),
+                     wxString::FromUTF8("Ошибка"), wxOK | wxICON_ERROR, this);
+        return;
+    }
+
+    double bore;
+if (!m_dynBoreInput->GetValue().ToDouble(&bore) || bore <= 0)
+{
+    wxMessageBox(wxString::FromUTF8("Введите корректный диаметр цилиндра."),
+                 wxString::FromUTF8("Ошибка"), wxOK | wxICON_ERROR, this);
+    return;
+}
+
+    try
+    {
+        wxBusyCursor busy;
+
+        // Создаём калькулятор
+        DynamicCalculator calculator(m_lastParams, m_lastResults,
+                                     m_dynPressureAngles, m_dynPressureValues,
+                                     massPiston, massRod, kRodOsc, bore);
+
+        // Выполняем расчёт
+        m_dynResults = calculator.calculate();
+
+        wxCommandEvent evt;
+        OnDynGraphTypeChanged(evt);
+
+        // Обновляем таблицу
+if (m_dynGrid->GetNumberRows() > 0)
+    m_dynGrid->DeleteRows(0, m_dynGrid->GetNumberRows());
+
+size_t numPoints = m_lastResults.alpha.size();
+m_dynGrid->AppendRows(numPoints);
+
+for (size_t i = 0; i < numPoints; ++i)
+{
+    m_dynGrid->SetCellValue(i, 0, wxString::Format("%.2f", m_lastResults.alpha[i]));
+    m_dynGrid->SetCellValue(i, 1, wxString::Format("%.3f", m_dynResults.total_torque[i]));
+}
+m_dynGrid->AutoSizeColumns();
+
+
+
+        // Отображаем результат (пока суммарный момент)
+        m_dynPlotResult->SetPreviewData(m_lastResults.alpha, m_dynResults.total_torque,
+                                        wxString::FromUTF8("Угол, град"),
+                                        wxString::FromUTF8("Крутящий момент, Н·м"));
+
+        // Заполнение таблицы
+if (m_dynGrid->GetNumberRows() > 0)
+    m_dynGrid->DeleteRows(0, m_dynGrid->GetNumberRows());
+
+m_dynGrid->AppendRows(numPoints);
+
+for (size_t i = 0; i < numPoints; ++i)
+{
+    m_dynGrid->SetCellValue(i, 0, wxString::Format("%.2f", m_lastResults.alpha[i]));
+    m_dynGrid->SetCellValue(i, 1, wxString::Format("%.3f", m_dynResults.gas_force_cyl0[i]));
+    m_dynGrid->SetCellValue(i, 2, wxString::Format("%.3f", m_dynResults.inertia_force_cyl0[i]));
+    m_dynGrid->SetCellValue(i, 3, wxString::Format("%.3f", m_dynResults.total_force_cyl0[i]));
+    m_dynGrid->SetCellValue(i, 4, wxString::Format("%.3f", m_dynResults.tangential_force_cyl0[i]));
+    m_dynGrid->SetCellValue(i, 5, wxString::Format("%.3f", m_dynResults.radial_force_cyl0[i]));
+    m_dynGrid->SetCellValue(i, 6, wxString::Format("%.3f", m_dynResults.cylinder_torque_cyl0[i]));
+    m_dynGrid->SetCellValue(i, 7, wxString::Format("%.3f", m_dynResults.total_torque[i]));
+}
+m_dynGrid->AutoSizeColumns();
+
+        // Переключаем на страницу результатов
+        m_dynamicBook->SetSelection(1);
+    }
+    catch (const std::exception& e)
+    {
+        wxMessageBox(wxString::FromUTF8("Ошибка расчёта: ") + e.what(),
+                     wxString::FromUTF8("Ошибка"), wxOK | wxICON_ERROR, this);
+    }
+    catch (...)
+    {
+        wxMessageBox(wxString::FromUTF8("Неизвестная ошибка расчёта."),
+                     wxString::FromUTF8("Ошибка"), wxOK | wxICON_ERROR, this);
+    }
+}
+
+
 // =====================================================================
 //  Обработчики событий
 // =====================================================================
@@ -1297,3 +1702,9 @@ void MainFrame::OnLoadSession(wxCommandEvent&)
                      wxString::FromUTF8("Ошибка"), wxOK | wxICON_ERROR, this);
     }
 }
+
+void MainFrame::OnDynamicBackToInput(wxCommandEvent&)
+{
+    m_dynamicBook->SetSelection(0);
+}
+

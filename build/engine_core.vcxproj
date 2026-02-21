@@ -305,28 +305,18 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Diag_Palpha\Calculations\calc_Palpha.cpp" />
-    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Diag_Palpha\Input_data\Palpha_input.cpp" />
-    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Diag_Palpha\Output_data\Palpha_output.cpp" />
-    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Dynamic\calc_dynamic\calc_dynamic.cpp" />
-    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Dynamic\input_data\dynamic_input.cpp" />
-    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Dynamic\output_data\dynamic_output.cpp" />
-    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\IND_Diagr\calculations\calc_ind_diagr.cpp" />
-    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\IND_Diagr\input_data\ind_diag_input.cpp" />
-    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\IND_Diagr\output_data\ind_diag_output.cpp" />
-    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\KinematicCalculator.cpp" />
-    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\kinematic_formulas.cpp" />
     <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\models\AxialKSMModel.cpp" />
     <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\models\DeaxialKSMModel.cpp" />
-    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\models\KSMModel.cpp" />
-    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\models\VShapedAttachedDeaxialKSMModel.cpp" />
-    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\models\VShapedAttachedKSMModel.cpp" />
-    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\models\VShapedDeaxialKSMModel.cpp" />
     <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\models\VShapedKSMModel.cpp" />
+    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\models\VShapedDeaxialKSMModel.cpp" />
+    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\models\VShapedAttachedKSMModel.cpp" />
+    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\models\VShapedAttachedDeaxialKSMModel.cpp" />
+    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\models\KSMModel.cpp" />
+    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\KinematicCalculator.cpp" />
+    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\kinematic_formulas.cpp" />
     <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\input_data\kinematic_input.cpp" />
     <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\output_data\kinematic_output.cpp" />
-    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\common\common_types.cpp" />
-    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\common\ind_diag_common_types.cpp" />
+    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Dynamic\Calculations\DynamicCalculator.cpp" />
     <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\path_manager.cpp" />
     <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\ind_path_manager.cpp" />
     <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\ind_Palpha_path_manager.cpp" />

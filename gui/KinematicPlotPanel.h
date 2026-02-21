@@ -43,6 +43,10 @@ public:
     Mode GetMode() const { return m_mode; }
     const std::vector<int>& GetSelectedIndices() const { return m_selectedIndices; }
 
+    void SetPreviewData(const std::vector<double>& x, const std::vector<double>& y,
+                    const wxString& xLabel = wxString::FromUTF8("Угол, град"),
+                    const wxString& yBaseLabel = wxString::FromUTF8("Давление"));
+
     
     
 private:
@@ -91,6 +95,16 @@ private:
     inline double MapX(double x, const wxRect& rect) const;
     inline double MapY(double y, const wxRect& rect) const;
     inline wxPoint MapPoint(double x, double y, const wxRect& rect) const;
+
+    std::vector<double> m_previewX;
+std::vector<double> m_previewY;
+wxString m_previewXLabel;
+wxString m_previewYLabel;
+bool m_previewMode;
+wxString m_previewYBaseLabel;
+
+// Приватный метод
+void DrawPreview(wxDC& dc, const wxRect& rect);
     
     wxDECLARE_EVENT_TABLE();
 };
