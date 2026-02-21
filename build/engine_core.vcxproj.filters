@@ -28,7 +28,31 @@
     <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\IND_Diagr\output_data\ind_diag_output.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\KinematicCalculator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\kinematic_formulas.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\models\AxialKSMModel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\models\DeaxialKSMModel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\models\KSMModel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\models\VShapedAttachedDeaxialKSMModel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\models\VShapedAttachedKSMModel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\models\VShapedDeaxialKSMModel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\models\VShapedKSMModel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\input_data\kinematic_input.cpp">

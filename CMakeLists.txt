@@ -20,6 +20,23 @@ list(REMOVE_ITEM CORE_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/core/Diag_Palpha/Calculations/main_Palpha.cpp"
 )
 
+# ЯВНО ДОБАВЛЯЕМ НОВЫЕ ФАЙЛЫ МОДЕЛЕЙ (если GLOB их не подхватил)
+# Но GLOB должен подхватить, если они лежат в правильных папках.
+# Для надёжности можно добавить конкретные пути:
+
+set(KINEMATIC_MODELS_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/Kinematic/Calculations/models/AxialKSMModel.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/Kinematic/Calculations/models/DeaxialKSMModel.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/Kinematic/Calculations/models/VShapedKSMModel.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/Kinematic/Calculations/models/VShapedDeaxialKSMModel.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/Kinematic/Calculations/models/VShapedAttachedKSMModel.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/Kinematic/Calculations/models/VShapedAttachedDeaxialKSMModel.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/Kinematic/Calculations/models/KSMModel.cpp"
+)
+
+# Добавляем их в CORE_SOURCES
+list(APPEND CORE_SOURCES ${KINEMATIC_MODELS_SOURCES})
+
 # Отдельно добавляем файлы менеджера путей (они лежат в корне)
 set(PATH_MANAGER_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/path_manager.cpp"
@@ -45,6 +62,8 @@ add_executable(engine_gui WIN32
     gui/MainFrame.h
     gui/KinematicPlotPanel.cpp
     gui/KinematicPlotPanel.h
+    gui/KinematicTablePanel.cpp      
+    gui/KinematicTablePanel.h
 )
 
 target_link_libraries(engine_gui PRIVATE

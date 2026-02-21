@@ -1,5 +1,4 @@
 #include "KinematicPlotPanel.h"
-
 #include <wx/dcbuffer.h>
 #include <algorithm>
 #include <limits>
@@ -7,38 +6,55 @@
 
 wxBEGIN_EVENT_TABLE(KinematicPlotPanel, wxPanel)
     EVT_PAINT(KinematicPlotPanel::OnPaint)
+    EVT_MOUSEWHEEL(KinematicPlotPanel::OnMouseWheel)
+    EVT_LEFT_DOWN(KinematicPlotPanel::OnMouseLeftDown)
+    EVT_LEFT_UP(KinematicPlotPanel::OnMouseLeftUp)
+    EVT_MOTION(KinematicPlotPanel::OnMouseMove)
+    EVT_MOUSE_CAPTURE_LOST(KinematicPlotPanel::OnMouseCaptureLost)
 wxEND_EVENT_TABLE()
+
+// Вычисление подходящего шага меток на оси
+static double niceTickStep(double range, int maxTicks = 8) {
+    double roughStep = range / maxTicks;
+    double magnitude = pow(10.0, floor(log10(roughStep)));
+    double normalized = roughStep / magnitude;
+    if (normalized < 1.5)      return magnitude * 1.0;
+    else if (normalized < 3.0) return magnitude * 2.0;
+    else if (normalized < 7.0) return magnitude * 5.0;
+    else                       return magnitude * 10.0;
+}
 
 KinematicPlotPanel::KinematicPlotPanel(wxWindow* parent)
     : wxPanel(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize,
               wxFULL_REPAINT_ON_RESIZE)
 {
     SetBackgroundStyle(wxBG_STYLE_PAINT);
-    // тёмный фон
     SetBackgroundColour(wxColour(0x20, 0x25, 0x2B));
-    
-    // Инициализируем цвета для цилиндров
+
+    // Цвета для линий цилиндров
     m_cylinderColors = {
-        wxColour(0x3A, 0x7B, 0xD5),  // Синий - цилиндр 1
-        wxColour(0x2E, 0xCC, 0x71),  // Зеленый - цилиндр 2
-        wxColour(0xE7, 0x4C, 0x3C),  // Красный - цилиндр 3
-        wxColour(0xF3, 0x9C, 0x12),  // Оранжевый - цилиндр 4
-        wxColour(0x9B, 0x59, 0xB6),  // Фиолетовый - цилиндр 5
-        wxColour(0x1A, 0xBC, 0x9C),  // Бирюзовый - цилиндр 6
-        wxColour(0x34, 0x98, 0xDB),  // Голубой - цилиндр 7
-        wxColour(0xE6, 0x7E, 0x22),  // Темно-оранжевый - цилиндр 8
-        wxColour(0x8E, 0x44, 0xAD),  // Темно-фиолетовый - цилиндр 9
-        wxColour(0x16, 0xA0, 0x85),  // Темно-бирюзовый - цилиндр 10
-        wxColour(0x27, 0xAE, 0x60),  // Светло-зеленый - цилиндр 11
-        wxColour(0x29, 0x80, 0xB9),  // Светло-синий - цилиндр 12
-        wxColour(0xD3, 0x54, 0x00),  // Коричневый - цилиндр 13
-        wxColour(0x7D, 0x3C, 0x98),  // Пурпурный - цилиндр 14
-        wxColour(0x13, 0x8D, 0x75),  // Морской волны - цилиндр 15
-        wxColour(0xC0, 0x39, 0x2B)   // Алый - цилиндр 16
+        wxColour(0x3A, 0x7B, 0xD5),
+        wxColour(0x2E, 0xCC, 0x71),
+        wxColour(0xE7, 0x4C, 0x3C),
+        wxColour(0xF3, 0x9C, 0x12),
+        wxColour(0x9B, 0x59, 0xB6),
+        wxColour(0x1A, 0xBC, 0x9C),
+        wxColour(0x34, 0x98, 0xDB),
+        wxColour(0xE6, 0x7E, 0x22),
+        wxColour(0x8E, 0x44, 0xAD),
+        wxColour(0x16, 0xA0, 0x85),
+        wxColour(0x27, 0xAE, 0x60),
+        wxColour(0x29, 0x80, 0xB9),
+        wxColour(0xD3, 0x54, 0x00),
+        wxColour(0x7D, 0x3C, 0x98),
+        wxColour(0x13, 0x8D, 0x75),
+        wxColour(0xC0, 0x39, 0x2B)
     };
-    
-    m_currentCylinder = 0;  // Показываем первый цилиндр по умолчанию
-    m_showAllCylinders = false;  // По умолчанию показываем один цилиндр
+
+    m_selectedIndices.clear();
+    m_showSide = false;
+    m_hasValidData = false;
+    m_dragging = false;
 }
 
 void KinematicPlotPanel::SetData(const CalculationResults* results)
@@ -50,37 +66,27 @@ void KinematicPlotPanel::SetData(const CalculationResults* results)
 void KinematicPlotPanel::SetMode(Mode mode)
 {
     m_mode = mode;
-    Refresh();
+    UpdateDataBounds();
+    ResetView();
 }
 
-void KinematicPlotPanel::SetCurrentCylinder(int cylinder)
+void KinematicPlotPanel::SetSelectedIndices(const std::vector<int>& indices)
 {
-    if (cylinder >= 0) {
-        m_currentCylinder = cylinder;
-        m_showAllCylinders = false;
-        Refresh();
-    }
+    m_selectedIndices = indices;
+    UpdateDataBounds();
+    ResetView();
 }
 
-void KinematicPlotPanel::SetShowAllCylinders(bool showAll)
+void KinematicPlotPanel::SetShowSide(bool show)
 {
-    m_showAllCylinders = showAll;
-    Refresh();
+    m_showSide = show;
+    UpdateDataBounds();
+    ResetView();
 }
 
-int KinematicPlotPanel::GetCurrentCylinder() const
-{
-    return m_currentCylinder;
-}
-
-bool KinematicPlotPanel::GetShowAllCylinders() const
-{
-    return m_showAllCylinders;
-}
-
-// ---------------------------------------------------------------------
-//   Отрисовка
-// ---------------------------------------------------------------------
+// =====================================================================
+//  Отрисовка
+// =====================================================================
 
 void KinematicPlotPanel::OnPaint(wxPaintEvent& evt)
 {
@@ -91,7 +97,6 @@ void KinematicPlotPanel::OnPaint(wxPaintEvent& evt)
     if (sz.GetWidth() < 50 || sz.GetHeight() < 50)
         return;
 
-    // Рабочая область графика
     const int marginLeft   = 70;
     const int marginRight  = 20;
     const int marginTop    = 20;
@@ -108,26 +113,65 @@ void KinematicPlotPanel::OnPaint(wxPaintEvent& evt)
     dc.SetPen(wxPen(wxColour(0x50, 0x58, 0x60)));
 
     DrawAxes(dc, plotRect);
+    
+    // Ограничиваем рисование кривых только областью графика
+    dc.SetClippingRegion(plotRect);
     DrawCurve(dc, plotRect);
+    dc.DestroyClippingRegion();
+    
     DrawLegend(dc, plotRect);
 }
 
 void KinematicPlotPanel::DrawAxes(wxDC& dc, const wxRect& rect)
 {
-    // Ось X (снизу) и ось Y (слева)
-    dc.DrawLine(rect.GetLeft(),  rect.GetBottom(),
-                rect.GetRight(), rect.GetBottom());
-    dc.DrawLine(rect.GetLeft(),  rect.GetTop(),
-                rect.GetLeft(),  rect.GetBottom());
+    if (!m_hasValidData) {
+        // Если данных нет, рисуем только рамку и подписи
+        dc.SetPen(wxPen(wxColour(0xB0, 0xB8, 0xC0), 2));
+        dc.SetBrush(*wxTRANSPARENT_BRUSH);
+        dc.DrawRectangle(rect);
+        return;
+    }
+
+    // Определяем, где проходят оси через ноль (если ноль в пределах видимой области)
+    bool drawXAxisAtZero = (m_viewMinY <= 0.0 && m_viewMaxY >= 0.0);
+    bool drawYAxisAtZero = (m_viewMinX <= 0.0 && m_viewMaxX >= 0.0);
+
+    int axisXPos = drawXAxisAtZero ? static_cast<int>(MapY(0.0, rect) + 0.5) : rect.GetBottom();
+    int axisYPos = drawYAxisAtZero ? static_cast<int>(MapX(0.0, rect) + 0.5) : rect.GetLeft();
+
+    // Ось X (горизонтальная)
+    dc.SetPen(wxPen(wxColour(0x80, 0x88, 0x90), 2));
+    dc.DrawLine(rect.GetLeft(), axisXPos, rect.GetRight(), axisXPos);
+
+    // Ось Y (вертикальная)
+    dc.DrawLine(axisYPos, rect.GetTop(), axisYPos, rect.GetBottom());
+
+    // Стрелки на концах осей (только если оси не совпадают с краями)
+    int arrowSize = 6;
+    if (drawXAxisAtZero) {
+        // Стрелка справа
+        dc.DrawLine(rect.GetRight(), axisXPos,
+                    rect.GetRight() - arrowSize, axisXPos - arrowSize/2);
+        dc.DrawLine(rect.GetRight(), axisXPos,
+                    rect.GetRight() - arrowSize, axisXPos + arrowSize/2);
+    }
+    if (drawYAxisAtZero) {
+        // Стрелка сверху
+        dc.DrawLine(axisYPos, rect.GetTop(),
+                    axisYPos - arrowSize/2, rect.GetTop() + arrowSize);
+        dc.DrawLine(axisYPos, rect.GetTop(),
+                    axisYPos + arrowSize/2, rect.GetTop() + arrowSize);
+    }
 
     // Подпись оси X
+    dc.SetTextForeground(wxColour(0xC0, 0xC0, 0xC0));
     dc.DrawText(
         wxString::FromUTF8("Угол поворота коленвала, градусы"),
         rect.GetLeft() + rect.GetWidth()/2 - 100,
-        rect.GetBottom() + 10
+        rect.GetBottom() + 20
     );
 
-    // Подпись оси Y зависит от типа графика
+    // Подпись оси Y
     wxString yLabel;
     switch (m_mode)
     {
@@ -155,9 +199,106 @@ void KinematicPlotPanel::DrawAxes(wxDC& dc, const wxRect& rect)
     }
 
     dc.DrawRotatedText(yLabel,
-                       rect.GetLeft() - 50,
+                       rect.GetLeft() - 70,
                        rect.GetTop() + rect.GetHeight() / 2,
                        90);
+
+  // --- Метки по оси X (шаг 45°) ---
+double xTickStep = 45.0;
+double xStart = ceil(m_viewMinX / xTickStep) * xTickStep;
+for (double x = xStart; x <= m_viewMaxX + 1e-6; x += xTickStep)
+{
+    int px = static_cast<int>(MapX(x, rect) + 0.5);
+    if (px < rect.GetLeft() || px > rect.GetRight())
+        continue;
+    dc.SetPen(wxPen(wxColour(0x80, 0x88, 0x90)));
+    int tickY = axisXPos;
+    dc.DrawLine(px, tickY - 4, px, tickY + 4);
+    wxString label = wxString::Format("%.0f", x);
+    wxSize textSize = dc.GetTextExtent(label);
+    dc.SetTextForeground(wxColour(0xE0, 0xE0, 0xE0));
+    int labelY = (axisXPos == rect.GetBottom()) ? axisXPos + 5 : axisXPos - textSize.GetHeight() - 5;
+    dc.DrawText(label, px - textSize.GetWidth() / 2, labelY);
+}
+
+// Гарантированно рисуем метку для максимального угла (обычно 360°)
+if (m_dataMaxX >= m_viewMinX - 1e-6 && m_dataMaxX <= m_viewMaxX + 1e-6)
+{
+    int px = static_cast<int>(MapX(m_dataMaxX, rect) + 0.5);
+    // Ограничиваем позицию, чтобы метка не выходила за рамку
+    px = std::max(rect.GetLeft(), std::min(px, rect.GetRight()));
+    dc.SetPen(wxPen(wxColour(0x80, 0x88, 0x90)));
+    int tickY = axisXPos;
+    dc.DrawLine(px, tickY - 4, px, tickY + 4);
+    wxString label = wxString::Format("%.0f", m_dataMaxX);
+    wxSize textSize = dc.GetTextExtent(label);
+    dc.SetTextForeground(wxColour(0xE0, 0xE0, 0xE0));
+    int labelY = (axisXPos == rect.GetBottom()) ? axisXPos + 5 : axisXPos - textSize.GetHeight() - 5;
+    dc.DrawText(label, px - textSize.GetWidth() / 2, labelY);
+}
+
+    // Засечки и подписи по оси Y
+    double yTickStep = niceTickStep(m_viewMaxY - m_viewMinY, 8);
+    double yStart = ceil(m_viewMinY / yTickStep) * yTickStep;
+    for (double y = yStart; y <= m_viewMaxY; y += yTickStep)
+    {
+        int py = static_cast<int>(MapY(y, rect) + 0.5);
+        if (py < rect.GetTop() || py > rect.GetBottom())
+            continue;
+        dc.SetPen(wxPen(wxColour(0x80, 0x88, 0x90)));
+        // Засечка слева или справа от оси Y
+        int tickX = axisYPos;
+        dc.DrawLine(tickX - 4, py, tickX + 4, py);
+        wxString label;
+        if (yTickStep >= 0.1)
+            label = wxString::Format("%.2f", y);
+        else
+            label = wxString::Format("%.3f", y);
+        wxSize textSize = dc.GetTextExtent(label);
+        dc.SetTextForeground(wxColour(0xE0, 0xE0, 0xE0));
+        // Подпись слева от оси (или справа, если ось слева)
+        int labelX = (axisYPos == rect.GetLeft()) ? axisYPos - textSize.GetWidth() - 8 : axisYPos + 8;
+        dc.DrawText(label, labelX, py - textSize.GetHeight() / 2);
+    }
+
+    // Рамка вокруг графика (поверх всего, но после засечек)
+    dc.SetPen(wxPen(wxColour(0xB0, 0xB8, 0xC0), 2));
+    dc.SetBrush(*wxTRANSPARENT_BRUSH);
+    dc.DrawRectangle(rect);
+}
+
+bool KinematicPlotPanel::SaveAsPNG(const wxString& filename) {
+    wxSize sz = GetClientSize();
+    if (sz.GetWidth() < 50 || sz.GetHeight() < 50)
+        return false;
+
+    wxBitmap bitmap(sz.GetWidth(), sz.GetHeight());
+    wxMemoryDC memDC;
+    memDC.SelectObject(bitmap);
+
+    memDC.SetBackground(GetBackgroundColour());
+    memDC.Clear();
+
+    const int marginLeft   = 70;
+    const int marginRight  = 20;
+    const int marginTop    = 20;
+    const int marginBottom = 50;
+
+    wxRect plotRect(
+        marginLeft,
+        marginTop,
+        sz.GetWidth()  - marginLeft - marginRight,
+        sz.GetHeight() - marginTop  - marginBottom
+    );
+
+    DrawAxes(memDC, plotRect);
+    memDC.SetClippingRegion(plotRect);
+    DrawCurve(memDC, plotRect);
+    memDC.DestroyClippingRegion();
+    DrawLegend(memDC, plotRect);
+
+    memDC.SelectObject(wxNullBitmap);
+    return bitmap.SaveFile(filename, wxBITMAP_TYPE_PNG);
 }
 
 void KinematicPlotPanel::DrawCurve(wxDC& dc, const wxRect& rect)
@@ -172,153 +313,122 @@ void KinematicPlotPanel::DrawCurve(wxDC& dc, const wxRect& rect)
     const auto& alpha = m_results->alpha;
     if (alpha.empty()) return;
 
-    // Определяем, сколько цилиндров нужно отображать
-    int numCylindersToShow = 0;
-    int startCylinder = 0;
-    int endCylinder = 0;
-    
-    if (m_showAllCylinders) {
-        // Определяем максимальное количество цилиндров из доступных данных
-        numCylindersToShow = GetAvailableCylinderCount();
-        startCylinder = 0;
-        endCylinder = numCylindersToShow - 1;
-    } else {
-        // Показываем только текущий цилиндр
-        numCylindersToShow = 1;
-        startCylinder = m_currentCylinder;
-        endCylinder = m_currentCylinder;
-    }
-
-    // Проверяем, что у нас есть данные для отображения
-    if (numCylindersToShow == 0) {
-        dc.DrawText(wxString::FromUTF8("Нет данных цилиндров для отображения"),
+    if (m_selectedIndices.empty())
+    {
+        dc.DrawText(wxString::FromUTF8("Нет выбранных цилиндров для отображения"),
                     rect.GetLeft() + 10, rect.GetTop() + 10);
         return;
     }
 
-    // Получаем данные для графика
-    const std::vector<std::vector<double>>* yData = GetYDataForMode();
-    if (!yData || yData->empty()) {
+    const auto* mainData = GetYDataForMode(m_mode);
+    if (!mainData || mainData->empty())
+    {
         dc.DrawText(wxString::FromUTF8("Нет данных для выбранного типа графика"),
                     rect.GetLeft() + 10, rect.GetTop() + 10);
         return;
     }
 
-    // Находим общие диапазоны для всех отображаемых цилиндров
-    double minX = alpha.front();
-    double maxX = alpha.back();
-    
-    double minY = std::numeric_limits<double>::max();
-    double maxY = std::numeric_limits<double>::lowest();
-
-    for (int cyl = startCylinder; cyl <= endCylinder; ++cyl) {
-        if (cyl >= static_cast<int>(yData->size())) continue;
-        
-        const auto& cylData = (*yData)[cyl];
-        if (cylData.size() != alpha.size() || cylData.empty()) continue;
-        
-        auto [minIt, maxIt] = std::minmax_element(cylData.begin(), cylData.end());
-        minY = std::min(minY, *minIt);
-        maxY = std::max(maxY, *maxIt);
-    }
-
-    if (std::abs(maxY - minY) < 1e-12) {
-        maxY += 1.0;
-        minY -= 1.0;
-    }
-
-    // Добавляем немного запаса по Y для лучшего отображения
-    double yRange = maxY - minY;
-    maxY += yRange * 0.05;
-
-    const double xScale = (maxX - minX) == 0.0
-                            ? 1.0
-                            : static_cast<double>(rect.GetWidth()) / (maxX - minX);
-    const double yScale = (maxY - minY) == 0.0
-                            ? 1.0
-                            : static_cast<double>(rect.GetHeight()) / (maxY - minY);
-
-    auto mapX = [&](double x) {
-        return rect.GetLeft() +
-               static_cast<int>((x - minX) * xScale);
-    };
-    auto mapY = [&](double y) {
-        return rect.GetBottom() -
-               static_cast<int>((y - minY) * yScale);
-    };
-
-    // Сетка (несколько вертикальных и горизонтальных линий)
-    dc.SetPen(wxPen(wxColour(0x35, 0x3B, 0x44), 1, wxPENSTYLE_DOT));
-
-    const int gridLines = 5;
-    for (int i = 1; i < gridLines; ++i)
+    const std::vector<std::vector<double>>* sideData = nullptr;
+    if (m_showSide)
     {
-        int gx = rect.GetLeft() + i * rect.GetWidth() / gridLines;
-        dc.DrawLine(gx, rect.GetTop(), gx, rect.GetBottom());
-
-        int gy = rect.GetTop() + i * rect.GetHeight() / gridLines;
-        dc.DrawLine(rect.GetLeft(), gy, rect.GetRight(), gy);
+        Mode sideMode = GetSideModeForCurrent();
+        sideData = GetYDataForMode(sideMode);
     }
 
-    // Отрисовка кривых для каждого цилиндра
-    for (int cyl = startCylinder; cyl <= endCylinder; ++cyl) {
-        if (cyl >= static_cast<int>(yData->size())) continue;
-        
-        const auto& cylData = (*yData)[cyl];
-        if (cylData.size() != alpha.size() || cylData.empty()) continue;
-        
-        // Выбираем цвет для цилиндра
-        wxColour color = m_cylinderColors[cyl % m_cylinderColors.size()];
-        dc.SetPen(wxPen(color, m_showAllCylinders ? 1 : 2));
-        
-        // Рисуем линию графика
-        wxPoint prev(mapX(alpha[0]), mapY(cylData[0]));
-        for (size_t i = 1; i < alpha.size(); ++i) {
-            wxPoint cur(mapX(alpha[i]), mapY(cylData[i]));
+    if (!m_hasValidData)
+        return;
+
+    // Сетка (опционально, можно убрать, если мешает)
+    dc.SetPen(wxPen(wxColour(0x45, 0x4B, 0x54), 1, wxPENSTYLE_DOT));
+    double xTickStep = 45.0;
+    double xStart = ceil(m_viewMinX / xTickStep) * xTickStep;
+    for (double x = xStart; x <= m_viewMaxX + 1e-9; x += xTickStep)
+    {
+        int gx = static_cast<int>(MapX(x, rect) + 0.5);
+        if (gx >= rect.GetLeft() && gx <= rect.GetRight())
+            dc.DrawLine(gx, rect.GetTop(), gx, rect.GetBottom());
+    }
+    double yTickStep = niceTickStep(m_viewMaxY - m_viewMinY, 8);
+    double yStart = ceil(m_viewMinY / yTickStep) * yTickStep;
+    for (double y = yStart; y <= m_viewMaxY + 1e-9; y += yTickStep)
+    {
+        int gy = static_cast<int>(MapY(y, rect) + 0.5);
+        if (gy >= rect.GetTop() && gy <= rect.GetBottom())
+            dc.DrawLine(rect.GetLeft(), gy, rect.GetRight(), gy);
+    }
+
+    // Линия нуля (если не совпадает с осью)
+    if (m_viewMinY <= 0.0 && m_viewMaxY >= 0.0)
+    {
+        int yZero = static_cast<int>(MapY(0.0, rect) + 0.5);
+        // Если ось X уже нарисована, не рисуем поверх неё, иначе рисуем пунктиром
+        if (std::abs(yZero - rect.GetBottom()) > 2 && std::abs(yZero - rect.GetTop()) > 2) {
+            dc.SetPen(wxPen(*wxWHITE, 1, wxPENSTYLE_DOT));
+            dc.DrawLine(rect.GetLeft(), yZero, rect.GetRight(), yZero);
+        }
+    }
+
+    // Отрисовка кривых
+    for (int idx : m_selectedIndices)
+    {
+        if (idx < 0 || idx >= (int)mainData->size()) continue;
+        const auto& mainVec = (*mainData)[idx];
+        if (mainVec.size() != alpha.size()) continue;
+
+        wxColour color = m_cylinderColors[idx % m_cylinderColors.size()];
+
+        // Основная кривая (сплошная)
+        dc.SetPen(wxPen(color, 2));
+        wxPoint prev = MapPoint(alpha[0], mainVec[0], rect);
+        for (size_t i = 1; i < alpha.size(); ++i)
+        {
+            wxPoint cur = MapPoint(alpha[i], mainVec[i], rect);
             dc.DrawLine(prev, cur);
             prev = cur;
         }
-        
-        // Для текущего цилиндра (или если показываем один) добавляем маркеры min/max
-        if (!m_showAllCylinders || cyl == m_currentCylinder) {
-            auto maxIt = std::max_element(cylData.begin(), cylData.end());
-            auto minIt = std::min_element(cylData.begin(), cylData.end());
-            
-            if (maxIt != cylData.end() && minIt != cylData.end()) {
-                size_t idxMax = std::distance(cylData.begin(), maxIt);
-                size_t idxMin = std::distance(cylData.begin(), minIt);
-                
-                double xAtMax = alpha[idxMax];
-                double xAtMin = alpha[idxMin];
-                
-                // Маркеры max/min
-                auto drawMarker = [&](double xVal, double yVal, const wxColour& markerColor)
+
+        // Боковая кривая (пунктирная)
+        if (m_showSide && sideData && idx < (int)sideData->size())
+        {
+            const auto& sideVec = (*sideData)[idx];
+            if (sideVec.size() == alpha.size())
+            {
+                dc.SetPen(wxPen(color, 2));
+                bool draw = true;
+                double dashLength = 5.0;
+                double gapLength = 8.0;
+
+                for (size_t i = 1; i < alpha.size(); ++i)
                 {
-                    int px = mapX(xVal);
-                    int py = mapY(yVal);
-                    dc.SetBrush(wxBrush(markerColor));
-                    dc.SetPen(wxPen(markerColor, 1));
-                    dc.DrawCircle(px, py, 4);
-                };
-                
-                drawMarker(xAtMax, *maxIt, wxColour(0, 180, 255));   // max — голубой
-                drawMarker(xAtMin, *minIt, wxColour(255, 120, 120)); // min — красный
-                
-                // Подписи max / min
-                dc.SetTextForeground(wxColour(0xE0, 0xE0, 0xE0));
-                
-                wxString cylinderText = m_showAllCylinders 
-                    ? wxString::FromUTF8("Цил.%d: ", cyl + 1)
-                    : wxString(wxString::FromUTF8(""));
-                
-                wxString maxText = wxString::Format(
-                   wxString::FromUTF8("max = %.3f при %.1f°"), *maxIt, xAtMax);
-                wxString minText = wxString::Format(
-                   wxString::FromUTF8("min = %.3f при %.1f°"), *minIt, xAtMin);
-                
-                int yOffset = cyl * 20;  // Смещение для каждого цилиндра
-                dc.DrawText(maxText, rect.GetLeft() + 5, rect.GetTop() + 5 + yOffset);
-                dc.DrawText(minText, rect.GetLeft() + 5, rect.GetTop() + 25 + yOffset);
+                    wxPoint p1 = MapPoint(alpha[i-1], sideVec[i-1], rect);
+                    wxPoint p2 = MapPoint(alpha[i], sideVec[i], rect);
+
+                    double dx = p2.x - p1.x;
+                    double dy = p2.y - p1.y;
+                    double length = sqrt(dx*dx + dy*dy);
+                    if (length < 0.1) continue;
+
+                    double stepX = dx / length;
+                    double stepY = dy / length;
+
+                    double pos = 0.0;
+                    while (pos < length)
+                    {
+                        if (draw)
+                        {
+                            double segEnd = std::min(pos + dashLength, length);
+                            wxPoint segP1(p1.x + stepX * pos, p1.y + stepY * pos);
+                            wxPoint segP2(p1.x + stepX * segEnd, p1.y + stepY * segEnd);
+                            dc.DrawLine(segP1, segP2);
+                            pos = segEnd + gapLength;
+                        }
+                        else
+                        {
+                            pos += gapLength;
+                        }
+                        draw = !draw;
+                    }
+                }
             }
         }
     }
@@ -326,84 +436,124 @@ void KinematicPlotPanel::DrawCurve(wxDC& dc, const wxRect& rect)
 
 void KinematicPlotPanel::DrawLegend(wxDC& dc, const wxRect& rect)
 {
-    
-    if (!m_results || !m_showAllCylinders) return;
-    
-    int numCylinders = GetAvailableCylinderCount();
-    if (numCylinders <= 1) return;  // Легенда не нужна для одного цилиндра
+    if (!m_results || m_selectedIndices.empty()) return;
 
-    bool hasSideCylinder = false;
-    if (m_params) {
-        hasSideCylinder = (m_params->gamma != 0.0);
-    } else {
-        // Fallback - проверяем векторы
-        hasSideCylinder = !m_results->cylinder_stroke_full_side.empty();
-    }
-    // Создаем прямоугольник для легенды
-    int legendWidth = 120;
-    int legendHeight = numCylinders;
+    bool isVType = (m_params && (m_params->gamma != 0.0 || m_params->gammaPric != 0.0));
+
+    int numItems = (int)m_selectedIndices.size();
+    int legendWidth = 140;
+    int legendHeight = numItems * 20 + 30;
     int legendX = rect.GetRight() - legendWidth - 10;
     int legendY = rect.GetTop() + 10;
-    
-    // Фон легенды
-    dc.SetBrush(wxBrush(wxColour(0x30, 0x35, 0x3B, 200)));  // Полупрозрачный
+
+    dc.SetBrush(wxBrush(wxColour(0x30, 0x35, 0x3B, 200)));
     dc.SetPen(wxPen(wxColour(0x50, 0x58, 0x60)));
-    if (hasSideCylinder == false) {
-        dc.DrawRectangle(legendX, legendY, legendWidth, legendHeight * 20 + 20);
-    } else {
-        dc.DrawRectangle(legendX, legendY, legendWidth, legendHeight * 10 + 20);
-    }
-    
-    // Заголовок легенды
+    dc.DrawRectangle(legendX, legendY, legendWidth, legendHeight);
+
     dc.SetTextForeground(wxColour(0xE0, 0xE0, 0xE0));
-    if (hasSideCylinder == false) {
-    dc.DrawText(wxString::FromUTF8("Цилиндры:"), legendX + 5, legendY + 5);
-    }
-    else {
-    dc.DrawText(wxString::FromUTF8("Ряды:"), legendX + 5, legendY + 5);   
-    }
+    dc.DrawText(wxString::FromUTF8("Отображаемые:"), legendX + 5, legendY + 5);
 
-    // Элементы легенды
-    if (hasSideCylinder == false) {
-    for (int i = 0; i < numCylinders; ++i) {
-        int yPos = legendY + 25 + i * 20;
-        
-        // Цветной квадратик
-        wxColour color = m_cylinderColors[i % m_cylinderColors.size()];
+    int yPos = legendY + 25;
+    for (int idx : m_selectedIndices)
+    {
+        wxColour color = m_cylinderColors[idx % m_cylinderColors.size()];
+
+        // Квадратик цвета
         dc.SetBrush(wxBrush(color));
         dc.SetPen(wxPen(color));
         dc.DrawRectangle(legendX + 10, yPos, 10, 10);
-        
-        // Текст с номером цилиндра
-        
-        wxString label = wxString::Format(wxString::FromUTF8("Цилиндр %d"), i + 1);
-        dc.DrawText(label, legendX + 25, yPos - 3);
-    }
-    }
-    else {
-    for (int i = 0; i < numCylinders / 2; ++i) {
-        int yPos = legendY + 25 + i * 20;
-        
-        // Цветной квадратик
-        wxColour color = m_cylinderColors[i % m_cylinderColors.size()];
-        dc.SetBrush(wxBrush(color));
-        dc.SetPen(wxPen(color));
-        dc.DrawRectangle(legendX + 10, yPos, 10, 10);
-        
-        // Текст с номером цилиндра/ряда
-                wxString label = wxString::Format(wxString::FromUTF8("Ряд %d"), i + 1);
-        dc.DrawText(label, legendX + 25, yPos - 3);
-    }
-    }
 
-    
+        if (m_showSide)
+        {
+            dc.SetPen(wxPen(color, 1, wxPENSTYLE_LONG_DASH));
+            dc.DrawLine(legendX + 25, yPos + 5, legendX + 40, yPos + 5);
+            wxString label = wxString::Format(isVType ? wxString::FromUTF8("Ряд %d + бок") : wxString::FromUTF8("Цил.%d + бок"), idx + 1);
+            dc.DrawText(label, legendX + 45, yPos - 3);
+        }
+        else
+        {
+            wxString label = wxString::Format(isVType ? wxString::FromUTF8("Ряд %d") : wxString::FromUTF8("Цил.%d"), idx + 1);
+            dc.DrawText(label, legendX + 25, yPos - 3);
+        }
+        yPos += 20;
+    }
 }
 
-const std::vector<std::vector<double>>* KinematicPlotPanel::GetYDataForMode() const
+// =====================================================================
+//  Вспомогательные методы
+// =====================================================================
+
+void KinematicPlotPanel::UpdateDataBounds()
+{
+    if (!m_results || m_results->alpha.empty() || m_selectedIndices.empty()) {
+        m_hasValidData = false;
+        return;
+    }
+
+    const auto& alpha = m_results->alpha;
+    m_dataMinX = alpha.front();
+    m_dataMaxX = alpha.back();
+
+    const auto* mainData = GetYDataForMode(m_mode);
+    if (!mainData || mainData->empty()) {
+        m_hasValidData = false;
+        return;
+    }
+
+    double minY = std::numeric_limits<double>::max();
+    double maxY = std::numeric_limits<double>::lowest();
+
+    for (int idx : m_selectedIndices) {
+        if (idx < 0 || idx >= (int)mainData->size()) continue;
+        const auto& vec = (*mainData)[idx];
+        if (vec.size() != alpha.size()) continue;
+        auto minmax = std::minmax_element(vec.begin(), vec.end());
+        minY = std::min(minY, *minmax.first);
+        maxY = std::max(maxY, *minmax.second);
+    }
+
+    if (m_showSide) {
+        Mode sideMode = GetSideModeForCurrent();
+        const auto* sideData = GetYDataForMode(sideMode);
+        if (sideData && !sideData->empty()) {
+            for (int idx : m_selectedIndices) {
+                if (idx < 0 || idx >= (int)sideData->size()) continue;
+                const auto& vec = (*sideData)[idx];
+                if (vec.size() != alpha.size()) continue;
+                auto minmax = std::minmax_element(vec.begin(), vec.end());
+                minY = std::min(minY, *minmax.first);
+                maxY = std::max(maxY, *minmax.second);
+            }
+        }
+    }
+
+    if (std::abs(maxY - minY) < 1e-12) {
+        maxY += 1.0;
+        minY -= 1.0;
+    }
+    double yRange = maxY - minY;
+    maxY += yRange * 0.05;  // отступ сверху
+
+    m_dataMinY = minY;
+    m_dataMaxY = maxY;
+    m_hasValidData = true;
+}
+
+void KinematicPlotPanel::ResetView()
+{
+    if (!m_hasValidData) return;
+    m_viewMinX = m_dataMinX;
+    m_viewMaxX = m_dataMaxX;
+    m_viewMinY = m_dataMinY;
+    m_viewMaxY = m_dataMaxY;
+    Refresh();
+}
+
+const std::vector<std::vector<double>>* KinematicPlotPanel::GetYDataForMode(Mode mode) const
 {
     if (!m_results) return nullptr;
-    
-    switch (m_mode)
+
+    switch (mode)
     {
     case Mode::Displacement:
     case Mode::DisplacementMain:
@@ -425,40 +575,160 @@ const std::vector<std::vector<double>>* KinematicPlotPanel::GetYDataForMode() co
     }
 }
 
-int KinematicPlotPanel::GetAvailableCylinderCount() const
+wxRect KinematicPlotPanel::GetPlotRect() const
 {
-    if (!m_results) return 0;
-    
-    if (m_params) {
-        bool isVType = (m_params->gamma != 0.0 || m_params->gammaPric != 0.0);
-        if (isVType) {
-            // Для V-образных возвращаем количество рядов
-            return m_params->countCyl / 2;
-        }
-    }
-    
-    // Для рядных или по умолчанию
-    if (!m_results->cylinder_stroke_full.empty()) {
-        return static_cast<int>(m_results->cylinder_stroke_full.size());
-    }
-
-    return 0;
+    wxSize sz = GetClientSize();
+    const int marginLeft   = 70;
+    const int marginRight  = 20;
+    const int marginTop    = 20;
+    const int marginBottom = 50;
+    return wxRect(marginLeft, marginTop,
+                  sz.GetWidth() - marginLeft - marginRight,
+                  sz.GetHeight() - marginTop - marginBottom);
 }
 
-// ---------------------------------------------------------------------
-//   Обновленный enum Mode в заголовочном файле
-// ---------------------------------------------------------------------
-/*
-// В KinematicPlotPanel.h нужно добавить новые значения в enum Mode:
-enum class Mode {
-    Displacement,       // Перемещение (для обратной совместимости)
-    Velocity,           // Скорость (для обратной совместимости)
-    Acceleration,       // Ускорение (для обратной совместимости)
-    DisplacementMain,   // Перемещение главного цилиндра
-    VelocityMain,       // Скорость главного цилиндра
-    AccelerationMain,   // Ускорение главного цилиндра
-    DisplacementSide,   // Перемещение бокового цилиндра
-    VelocitySide,       // Скорость бокового цилиндра
-    AccelerationSide    // Ускорение бокового цилиндра
-};
-*/
+KinematicPlotPanel::Mode KinematicPlotPanel::GetSideModeForCurrent() const
+{
+    switch (m_mode)
+    {
+    case Mode::DisplacementMain:
+        return Mode::DisplacementSide;
+    case Mode::VelocityMain:
+        return Mode::VelocitySide;
+    case Mode::AccelerationMain:
+        return Mode::AccelerationSide;
+    default:
+        return m_mode;
+    }
+}
+
+double KinematicPlotPanel::MapX(double x, const wxRect& rect) const
+{
+    return rect.GetLeft() + (x - m_viewMinX) * rect.GetWidth() / (m_viewMaxX - m_viewMinX);
+}
+
+double KinematicPlotPanel::MapY(double y, const wxRect& rect) const
+{
+    return rect.GetBottom() - (y - m_viewMinY) * rect.GetHeight() / (m_viewMaxY - m_viewMinY);
+}
+
+wxPoint KinematicPlotPanel::MapPoint(double x, double y, const wxRect& rect) const
+{
+    return wxPoint(static_cast<int>(MapX(x, rect) + 0.5),
+                   static_cast<int>(MapY(y, rect) + 0.5));
+}
+
+// Обработчики мыши
+void KinematicPlotPanel::OnMouseWheel(wxMouseEvent& evt)
+{
+    if (!m_hasValidData) {
+        evt.Skip();
+        return;
+    }
+
+    wxRect plotRect = GetPlotRect();
+    wxPoint mousePos = evt.GetPosition();
+    if (!plotRect.Contains(mousePos)) {
+        evt.Skip();
+        return;
+    }
+
+    double dataX = m_viewMinX + (mousePos.x - plotRect.GetLeft()) * (m_viewMaxX - m_viewMinX) / plotRect.GetWidth();
+    double dataY = m_viewMaxY - (mousePos.y - plotRect.GetTop()) * (m_viewMaxY - m_viewMinY) / plotRect.GetHeight();
+
+    double zoomFactor = 1.1;
+    if (evt.GetWheelRotation() < 0)
+        zoomFactor = 1.0 / zoomFactor;
+
+    double newWidth = (m_viewMaxX - m_viewMinX) * zoomFactor;
+    double newHeight = (m_viewMaxY - m_viewMinY) * zoomFactor;
+
+    double newMinX = dataX - (dataX - m_viewMinX) * zoomFactor;
+    double newMaxX = newMinX + newWidth;
+    double newMinY = dataY - (dataY - m_viewMinY) * zoomFactor;
+    double newMaxY = newMinY + newHeight;
+
+    // Ограничение полными данными с сохранением размера окна
+    if (newMinX < m_dataMinX) { newMinX = m_dataMinX; newMaxX = newMinX + newWidth; }
+    if (newMaxX > m_dataMaxX) { newMaxX = m_dataMaxX; newMinX = newMaxX - newWidth; }
+    if (newMinY < m_dataMinY) { newMinY = m_dataMinY; newMaxY = newMinY + newHeight; }
+    if (newMaxY > m_dataMaxY) { newMaxY = m_dataMaxY; newMinY = newMaxY - newHeight; }
+
+    m_viewMinX = newMinX;
+    m_viewMaxX = newMaxX;
+    m_viewMinY = newMinY;
+    m_viewMaxY = newMaxY;
+
+    Refresh();
+}
+
+void KinematicPlotPanel::OnMouseLeftDown(wxMouseEvent& evt)
+{
+    if (!m_hasValidData) {
+        evt.Skip();
+        return;
+    }
+
+    if (evt.ControlDown()) {
+        m_dragging = true;
+        m_dragLastPos = evt.GetPosition();
+        m_dragStartMinX = m_viewMinX;
+        m_dragStartMaxX = m_viewMaxX;
+        m_dragStartMinY = m_viewMinY;
+        m_dragStartMaxY = m_viewMaxY;
+        CaptureMouse();
+    } else {
+        evt.Skip();
+    }
+}
+
+void KinematicPlotPanel::OnMouseLeftUp(wxMouseEvent& evt)
+{
+    if (m_dragging) {
+        m_dragging = false;
+        ReleaseMouse();
+    } else {
+        evt.Skip();
+    }
+}
+
+void KinematicPlotPanel::OnMouseMove(wxMouseEvent& evt)
+{
+    if (m_dragging && evt.LeftIsDown() && evt.ControlDown()) {
+        wxPoint currentPos = evt.GetPosition();
+        wxPoint delta = currentPos - m_dragLastPos;
+
+        wxRect plotRect = GetPlotRect();
+        if (plotRect.width == 0) return;
+
+        double dx = -delta.x * (m_viewMaxX - m_viewMinX) / plotRect.width;
+        double dy = delta.y * (m_viewMaxY - m_viewMinY) / plotRect.height;
+
+        double newMinX = m_dragStartMinX + dx;
+        double newMaxX = m_dragStartMaxX + dx;
+        double newMinY = m_dragStartMinY + dy;
+        double newMaxY = m_dragStartMaxY + dy;
+
+        double width = m_viewMaxX - m_viewMinX;
+        double height = m_viewMaxY - m_viewMinY;
+
+        if (newMinX < m_dataMinX) { newMinX = m_dataMinX; newMaxX = newMinX + width; }
+        if (newMaxX > m_dataMaxX) { newMaxX = m_dataMaxX; newMinX = newMaxX - width; }
+        if (newMinY < m_dataMinY) { newMinY = m_dataMinY; newMaxY = newMinY + height; }
+        if (newMaxY > m_dataMaxY) { newMaxY = m_dataMaxY; newMinY = newMaxY - height; }
+
+        m_viewMinX = newMinX;
+        m_viewMaxX = newMaxX;
+        m_viewMinY = newMinY;
+        m_viewMaxY = newMaxY;
+
+        Refresh();
+    } else {
+        evt.Skip();
+    }
+}
+
+void KinematicPlotPanel::OnMouseCaptureLost(wxMouseCaptureLostEvent& evt)
+{
+    m_dragging = false;
+}

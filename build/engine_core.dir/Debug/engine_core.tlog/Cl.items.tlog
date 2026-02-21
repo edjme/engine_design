@@ -7,7 +7,15 @@ C:\Users\aleks\Documents\progs\engine_design\core\Dynamic\output_data\dynamic_ou
 C:\Users\aleks\Documents\progs\engine_design\core\IND_Diagr\calculations\calc_ind_diagr.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\calc_ind_diagr.obj
 C:\Users\aleks\Documents\progs\engine_design\core\IND_Diagr\input_data\ind_diag_input.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\ind_diag_input.obj
 C:\Users\aleks\Documents\progs\engine_design\core\IND_Diagr\output_data\ind_diag_output.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\ind_diag_output.obj
+C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\KinematicCalculator.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\KinematicCalculator.obj
 C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\kinematic_formulas.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\kinematic_formulas.obj
+C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\models\AxialKSMModel.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\AxialKSMModel.obj
+C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\models\DeaxialKSMModel.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\DeaxialKSMModel.obj
+C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\models\KSMModel.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\KSMModel.obj
+C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\models\VShapedAttachedDeaxialKSMModel.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\VShapedAttachedDeaxialKSMModel.obj
+C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\models\VShapedAttachedKSMModel.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\VShapedAttachedKSMModel.obj
+C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\models\VShapedDeaxialKSMModel.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\VShapedDeaxialKSMModel.obj
+C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\models\VShapedKSMModel.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\VShapedKSMModel.obj
 C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\input_data\kinematic_input.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\kinematic_input.obj
 C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\output_data\kinematic_output.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\kinematic_output.obj
 C:\Users\aleks\Documents\progs\engine_design\core\common\common_types.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\common_types.obj
