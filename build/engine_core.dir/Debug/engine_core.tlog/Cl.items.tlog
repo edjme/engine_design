@@ -6,10 +6,9 @@ C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\models\
 C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\models\VShapedAttachedDeaxialKSMModel.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\VShapedAttachedDeaxialKSMModel.obj
 C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\models\KSMModel.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\KSMModel.obj
 C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\KinematicCalculator.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\KinematicCalculator.obj
-C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\kinematic_formulas.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\kinematic_formulas.obj
 C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\input_data\kinematic_input.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\kinematic_input.obj
 C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\output_data\kinematic_output.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\kinematic_output.obj
 C:\Users\aleks\Documents\progs\engine_design\core\Dynamic\Calculations\DynamicCalculator.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\DynamicCalculator.obj
+C:\Users\aleks\Documents\progs\engine_design\core\Dynamic\output_data\dynamic_output.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\dynamic_output.obj
+C:\Users\aleks\Documents\progs\engine_design\core\common\engine_params_builder.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\engine_params_builder.obj
 C:\Users\aleks\Documents\progs\engine_design\path_manager.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\path_manager.obj
-C:\Users\aleks\Documents\progs\engine_design\ind_path_manager.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\ind_path_manager.obj
-C:\Users\aleks\Documents\progs\engine_design\ind_Palpha_path_manager.cpp;C:\Users\aleks\Documents\progs\engine_design\build\engine_core.dir\Debug\ind_Palpha_path_manager.obj

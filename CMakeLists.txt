@@ -22,21 +22,21 @@ set(CORE_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/core/Kinematic/Calculations/models/KSMModel.cpp"
     # Kinematic calculator
     "${CMAKE_CURRENT_SOURCE_DIR}/core/Kinematic/Calculations/KinematicCalculator.cpp"
-    # Kinematic formulas (старый код)
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/Kinematic/Calculations/kinematic_formulas.cpp"
     # Input/output
     "${CMAKE_CURRENT_SOURCE_DIR}/core/Kinematic/input_data/kinematic_input.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/Kinematic/output_data/kinematic_output.cpp"
     # Dynamic calculator
     "${CMAKE_CURRENT_SOURCE_DIR}/core/Dynamic/Calculations/DynamicCalculator.cpp"
-    # Другие файлы core (если есть) можно добавить сюда же
-)
+
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/Dynamic/output_data/dynamic_output.cpp"
+    
+    # common utils
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/common/engine_params_builder.cpp"
+    )
 
 # Файлы менеджера путей (лежат в корне проекта)
 set(PATH_MANAGER_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/path_manager.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/ind_path_manager.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/ind_Palpha_path_manager.cpp"
 )
 
 add_library(engine_core STATIC
@@ -63,6 +63,8 @@ add_executable(engine_gui WIN32
     gui/KinematicTablePanel.h
     gui/dynamic_input.cpp
     gui/dynamic_input.h
+    gui/CrankConfigPanel.cpp
+    gui/CrankConfigPanel.h
 )
 
 target_link_libraries(engine_gui PRIVATE

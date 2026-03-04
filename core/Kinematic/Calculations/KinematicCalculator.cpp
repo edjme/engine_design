@@ -4,14 +4,22 @@
 #include <thread>
 #include <atomic>
 
+static double NormDeg(double deg, double cycle)
+{
+    double x = std::fmod(deg, cycle);
+    if (x < 0.0) x += cycle;
+    return x;
+}
+
 KinematicCalculator::KinematicCalculator(const EngineParams& params)
-    : m_params(params) {
+    : m_params(params)
+{
     // Определяем тип КШМ по параметрам
     KSMType type;
     const double e = params.dezaxial;
     const double gamma = params.gamma;
     const double gammaPric = params.gammaPric;
-    
+
     if (e == 0 && gamma == 0 && gammaPric == 0) {
         type = KSMType::Axial;
     } else if (e != 0 && gamma == 0 && gammaPric == 0) {
@@ -27,59 +35,68 @@ KinematicCalculator::KinematicCalculator(const EngineParams& params)
     } else {
         type = KSMType::Axial; // По умолчанию
     }
-    
+
     m_model = KSMModel::create(type, params);
 }
 
-std::vector<double> KinematicCalculator::generateAlphaGrid() const {
+std::vector<double> KinematicCalculator::generateAlphaGrid() const
+{
     std::vector<double> alpha;
-    int numPoints = static_cast<int>(m_params.end_alpha / m_params.step_alpha) + 1;
+    const int numPoints = static_cast<int>(m_params.end_alpha / m_params.step_alpha) + 1;
     alpha.reserve(numPoints);
-    
-    for (int i = 0; i < numPoints; ++i) {
+
+    for (int i = 0; i < numPoints; ++i)
         alpha.push_back(i * m_params.step_alpha);
-    }
-    
+
     return alpha;
 }
 
-std::vector<double> KinematicCalculator::calculateFiringAngles() const {
-    std::vector<double> angles(m_params.countCyl, 0.0);
-    
-    // Интервал между вспышками
-    double fullCycleDegrees = (m_params.taktnost == 2) ? 360.0 : 720.0;
-    double interval = fullCycleDegrees / m_params.countCyl;
-    
-    // Равномерное распределение (пока без учёта порядка работы)
-    for (int i = 0; i < m_params.countCyl; ++i) {
-        angles[i] = i * interval;
-    }
-    
-    return angles;
-}
-
-void KinematicCalculator::setProgressCallback(ProgressCallback callback)
+std::vector<double> KinematicCalculator::calculateFiringAngles() const
 {
-    m_callback = callback;
+    // КИНЕМАТИКА: используем только геометрию КВ (фазы шеек), а не "вспышки".
+    const double cycle = (m_params.taktnost == 2) ? 360.0 : 720.0;
+
+    // Приоритет: новый массив геометрических фаз
+    if (m_params.cyl_geom_phase_deg.size() == static_cast<size_t>(m_params.countCyl))
+    {
+        std::vector<double> angles = m_params.cyl_geom_phase_deg;
+        for (double& a : angles) a = NormDeg(a, cycle);
+        return angles;
+    }
+
+    // Fallback: legacy массив (старые проекты) — трактуем как геометрию
+    if (m_params.cyl_phase_deg.size() == static_cast<size_t>(m_params.countCyl))
+    {
+        std::vector<double> angles = m_params.cyl_phase_deg;
+        for (double& a : angles) a = NormDeg(a, cycle);
+        return angles;
+    }
+
+    // Последний fallback: равномерно (чтобы не падать)
+    std::vector<double> angles(m_params.countCyl, 0.0);
+    const double interval = cycle / static_cast<double>(m_params.countCyl);
+    for (int i = 0; i < m_params.countCyl; ++i)
+        angles[i] = interval * static_cast<double>(i);
+
+    return angles;
 }
 
 void KinematicCalculator::calculateCylinder(
     int cylinderIndex,
     const std::vector<double>& alpha,
-    CalculationResults& results) const {
-    
-    if (m_cancelled) return;
-    
-    std::vector<double> firingAngles = calculateFiringAngles();
-    double phaseShift = firingAngles[cylinderIndex];
-    
-    // Создаём временные результаты для этого цилиндра
+    CalculationResults& results,
+    const std::vector<double>& phaseShifts,
+    std::atomic<bool>* cancelFlag
+) const
+{
+    if (cancelFlag && cancelFlag->load()) return;
+
+    const double phaseShift = phaseShifts[static_cast<size_t>(cylinderIndex)];
+
     CylinderResults cylResults;
-    
-    // Выполняем расчёт через модель
     m_model->calculate(cylResults, alpha, phaseShift);
-    
-    // Переносим результаты в общую структуру
+
+    // Переносим результаты
     results.cylinder_stroke_full[cylinderIndex] = cylResults.stroke_full;
     results.cylinder_stroke1[cylinderIndex] = cylResults.stroke1;
     results.cylinder_stroke2[cylinderIndex] = cylResults.stroke2;
@@ -92,58 +109,34 @@ void KinematicCalculator::calculateCylinder(
     results.cylinder_betta_rod[cylinderIndex] = cylResults.betta_rod;
     results.cylinder_omega_rod[cylinderIndex] = cylResults.omega_rod;
     results.cylinder_eps_rod[cylinderIndex] = cylResults.eps_rod;
-    
-    // Если есть боковой цилиндр
+
     if (m_model->hasSideCylinder() && cylResults.side) {
         results.cylinder_stroke_full_side[cylinderIndex] = cylResults.side->stroke_full;
-    results.cylinder_stroke1_side[cylinderIndex] = cylResults.side->stroke1;
-    results.cylinder_stroke2_side[cylinderIndex] = cylResults.side->stroke2;
-    results.cylinder_velocity_full_side[cylinderIndex] = cylResults.side->velocity_full;
-    results.cylinder_velocity1_side[cylinderIndex] = cylResults.side->velocity1;
-    results.cylinder_velocity2_side[cylinderIndex] = cylResults.side->velocity2;
-    results.cylinder_acceleration_full_side[cylinderIndex] = cylResults.side->acceleration_full;
-    results.cylinder_acceleration1_side[cylinderIndex] = cylResults.side->acceleration1;
-    results.cylinder_acceleration2_side[cylinderIndex] = cylResults.side->acceleration2;
-    results.cylinder_betta_rod_side[cylinderIndex] = cylResults.side->betta_rod;
-    results.cylinder_omega_rod_side[cylinderIndex] = cylResults.side->omega_rod;
-    results.cylinder_eps_rod_side[cylinderIndex] = cylResults.side->eps_rod;
+        results.cylinder_stroke1_side[cylinderIndex] = cylResults.side->stroke1;
+        results.cylinder_stroke2_side[cylinderIndex] = cylResults.side->stroke2;
+        results.cylinder_velocity_full_side[cylinderIndex] = cylResults.side->velocity_full;
+        results.cylinder_velocity1_side[cylinderIndex] = cylResults.side->velocity1;
+        results.cylinder_velocity2_side[cylinderIndex] = cylResults.side->velocity2;
+        results.cylinder_acceleration_full_side[cylinderIndex] = cylResults.side->acceleration_full;
+        results.cylinder_acceleration1_side[cylinderIndex] = cylResults.side->acceleration1;
+        results.cylinder_acceleration2_side[cylinderIndex] = cylResults.side->acceleration2;
+        results.cylinder_betta_rod_side[cylinderIndex] = cylResults.side->betta_rod;
+        results.cylinder_omega_rod_side[cylinderIndex] = cylResults.side->omega_rod;
+        results.cylinder_eps_rod_side[cylinderIndex] = cylResults.side->eps_rod;
     }
-    
-    m_progress = static_cast<double>(cylinderIndex + 1) / m_params.countCyl;
 }
 
-void KinematicCalculator::calculateCylinderThread(
-    int cylinderIndex,
-    const EngineParams& params,
-    const std::unique_ptr<KSMModel>& model,
-    const std::vector<double>& alpha,
-    CalculationResults& results,
-    std::atomic<int>& completed,
-    std::atomic<bool>& cancelled) {
-    
-    if (cancelled) return;
-    
-    std::vector<double> firingAngles; // TODO: передавать как параметр
-    double interval = (params.taktnost == 2) ? 360.0 / params.countCyl : 720.0 / params.countCyl;
-    double phaseShift = cylinderIndex * interval;
-    
-    CylinderResults cylResults;
-    model->calculate(cylResults, alpha, phaseShift);
-    
-    // Заполняем результаты (нужна синхронизация!)
-    // В реальности нужно использовать мьютексы
-    
-    completed++;
-}
-
-CalculationResults KinematicCalculator::calculateAll() {
+CalculationResults KinematicCalculator::calculateAll(
+    std::function<void(double)> progressCallback,
+    std::atomic<bool>* cancelFlag
+) const
+{
     CalculationResults results;
-    
-    // Генерируем сетку углов
     results.alpha = generateAlphaGrid();
-    
-    // Инициализируем векторы для каждого цилиндра
-    int numCylinders = static_cast<int>(m_params.countCyl);
+
+    const int numCylinders = static_cast<int>(m_params.countCyl);
+
+    // Инициализация векторов
     results.cylinder_stroke_full.resize(numCylinders);
     results.cylinder_stroke1.resize(numCylinders);
     results.cylinder_stroke2.resize(numCylinders);
@@ -156,7 +149,7 @@ CalculationResults KinematicCalculator::calculateAll() {
     results.cylinder_betta_rod.resize(numCylinders);
     results.cylinder_omega_rod.resize(numCylinders);
     results.cylinder_eps_rod.resize(numCylinders);
-    
+
     if (m_model->hasSideCylinder()) {
         results.cylinder_stroke_full_side.resize(numCylinders);
         results.cylinder_stroke1_side.resize(numCylinders);
@@ -171,55 +164,83 @@ CalculationResults KinematicCalculator::calculateAll() {
         results.cylinder_omega_rod_side.resize(numCylinders);
         results.cylinder_eps_rod_side.resize(numCylinders);
     }
-    
-    m_progress = 0.0;
-    m_cancelled = false;
-    
-    if (m_parallel && numCylinders > 1) {
-        // Многопоточный расчёт (TODO: реализовать)
-        // Пока используем последовательный
-        for (int i = 0; i < numCylinders; ++i) {
-            calculateCylinder(i, results.alpha, results);
+
+    // Геометрические фазы цилиндров (один раз, не внутри каждого цилиндра)
+    const std::vector<double> phaseShifts = calculateFiringAngles();
+
+    // Расчёт
+    if (m_params.cyl_per_crankpin == 2)
+    {
+        const int crankCount = numCylinders / 2;
+
+        for (int c = 0; c < crankCount; ++c)
+        {
+            if (cancelFlag && cancelFlag->load()) break;
+
+            const int base = 2 * c;   // основной цилиндр пары
+            const int sideIdx = base + 1;
+
+            calculateCylinder(base, results.alpha, results, phaseShifts, cancelFlag);
+
+            if (m_model->hasSideCylinder())
+            {
+                // side-результаты лежат в *_side[base] — переносим их в *_full[sideIdx]
+                results.cylinder_stroke_full[sideIdx]       = std::move(results.cylinder_stroke_full_side[base]);
+                results.cylinder_stroke1[sideIdx]           = std::move(results.cylinder_stroke1_side[base]);
+                results.cylinder_stroke2[sideIdx]           = std::move(results.cylinder_stroke2_side[base]);
+
+                results.cylinder_velocity_full[sideIdx]     = std::move(results.cylinder_velocity_full_side[base]);
+                results.cylinder_velocity1[sideIdx]         = std::move(results.cylinder_velocity1_side[base]);
+                results.cylinder_velocity2[sideIdx]         = std::move(results.cylinder_velocity2_side[base]);
+
+                results.cylinder_acceleration_full[sideIdx] = std::move(results.cylinder_acceleration_full_side[base]);
+                results.cylinder_acceleration1[sideIdx]     = std::move(results.cylinder_acceleration1_side[base]);
+                results.cylinder_acceleration2[sideIdx]     = std::move(results.cylinder_acceleration2_side[base]);
+
+                results.cylinder_betta_rod[sideIdx]         = std::move(results.cylinder_betta_rod_side[base]);
+                results.cylinder_omega_rod[sideIdx]         = std::move(results.cylinder_omega_rod_side[base]);
+                results.cylinder_eps_rod[sideIdx]           = std::move(results.cylinder_eps_rod_side[base]);
+            }
+            else
+            {
+                // fallback: если модель не отдала side — считаем второй цилиндр как копию первого
+                results.cylinder_stroke_full[sideIdx]       = results.cylinder_stroke_full[base];
+                results.cylinder_stroke1[sideIdx]           = results.cylinder_stroke1[base];
+                results.cylinder_stroke2[sideIdx]           = results.cylinder_stroke2[base];
+
+                results.cylinder_velocity_full[sideIdx]     = results.cylinder_velocity_full[base];
+                results.cylinder_velocity1[sideIdx]         = results.cylinder_velocity1[base];
+                results.cylinder_velocity2[sideIdx]         = results.cylinder_velocity2[base];
+
+                results.cylinder_acceleration_full[sideIdx] = results.cylinder_acceleration_full[base];
+                results.cylinder_acceleration1[sideIdx]     = results.cylinder_acceleration1[base];
+                results.cylinder_acceleration2[sideIdx]     = results.cylinder_acceleration2[base];
+
+                results.cylinder_betta_rod[sideIdx]         = results.cylinder_betta_rod[base];
+                results.cylinder_omega_rod[sideIdx]         = results.cylinder_omega_rod[base];
+                results.cylinder_eps_rod[sideIdx]           = results.cylinder_eps_rod[base];
+            }
+
+            if (progressCallback)
+                progressCallback(static_cast<double>(c + 1) / std::max(1, crankCount));
         }
-    } else {
-        // Последовательный расчёт
-        for (int i = 0; i < numCylinders; ++i) {
-            calculateCylinder(i, results.alpha, results);
+    }
+    else
+    {
+        for (int i = 0; i < numCylinders; ++i)
+        {
+            if (cancelFlag && cancelFlag->load()) break;
+
+            calculateCylinder(i, results.alpha, results, phaseShifts, cancelFlag);
+
+            if (progressCallback)
+                progressCallback(static_cast<double>(i + 1) / std::max(1, numCylinders));
         }
     }
-    
-    // Заполняем сводные данные для первого цилиндра (для обратной совместимости)
-    if (!results.cylinder_stroke_full.empty()) {
-        results.stroke_full = results.cylinder_stroke_full[0];
-        results.stroke1 = results.cylinder_stroke1[0];
-        results.stroke2 = results.cylinder_stroke2[0];
-        results.velocity_full = results.cylinder_velocity_full[0];
-        results.velocity1 = results.cylinder_velocity1[0];
-        results.velocity2 = results.cylinder_velocity2[0];
-        results.acceleration_full = results.cylinder_acceleration_full[0];
-        results.acceleration1 = results.cylinder_acceleration1[0];
-        results.acceleration2 = results.cylinder_acceleration2[0];
-        results.betta_rod = results.cylinder_betta_rod[0];
-        results.omega_rod = results.cylinder_omega_rod[0];
-        results.eps_rod = results.cylinder_eps_rod[0];
-    }
-    
-    if (m_model->hasSideCylinder() && !results.cylinder_stroke_full_side.empty()) {
-    results.stroke_full_side = results.cylinder_stroke_full_side[0];
-    results.stroke1_side = results.cylinder_stroke1_side[0];
-    results.stroke2_side = results.cylinder_stroke2_side[0];
-    results.velocity_full_side = results.cylinder_velocity_full_side[0];
-    results.velocity1_side = results.cylinder_velocity1_side[0];
-    results.velocity2_side = results.cylinder_velocity2_side[0];
-    results.acceleration_full_side = results.cylinder_acceleration_full_side[0];
-    results.acceleration1_side = results.cylinder_acceleration1_side[0];
-    results.acceleration2_side = results.cylinder_acceleration2_side[0];
-    results.betta_rod_side = results.cylinder_betta_rod_side[0];
-    results.omega_rod_side = results.cylinder_omega_rod_side[0];
-    results.eps_rod_side = results.cylinder_eps_rod_side[0];
-    }
-    
-    results.firing_interval = (m_params.taktnost == 2) ? 360.0 / m_params.countCyl : 720.0 / m_params.countCyl;
-    
+
+    results.firing_interval = (m_params.taktnost == 2)
+        ? 360.0 / std::max(1, numCylinders)
+        : 720.0 / std::max(1, numCylinders);
+
     return results;
 }

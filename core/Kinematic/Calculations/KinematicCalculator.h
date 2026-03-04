@@ -4,55 +4,32 @@
 #include <memory>
 #include <vector>
 #include <functional>
+#include <atomic>
 
 class KinematicCalculator {
 public:
-    // Конструктор принимает параметры двигателя
     explicit KinematicCalculator(const EngineParams& params);
-    
-    // Основной метод расчёта всех цилиндров
-    CalculationResults calculateAll();
-    
-    // Включить/выключить многопоточный расчёт
-    void setParallel(bool enable) { m_parallel = enable; }
-    
-    // Получить информацию о прогрессе (для прогресс-бара)
-    double getProgress() const { return m_progress; }
-    
-    // Отменить текущий расчёт (для долгих операций)
-    void cancel() { m_cancelled = true; }
 
-    using ProgressCallback = std::function<void(double progress, bool& cancelled)>;
-    void setProgressCallback(ProgressCallback callback);
+    // Основной метод расчёта – константный, принимает колбэк и флаг отмены
+    CalculationResults calculateAll(
+        std::function<void(double)> progressCallback = nullptr,
+        std::atomic<bool>* cancelFlag = nullptr
+    ) const;
 
-    bool isCancelled() const { return m_cancelled; }
-    
 private:
     EngineParams m_params;
     std::unique_ptr<KSMModel> m_model;
-    bool m_parallel = false;
-    mutable double m_progress = 0.0;
-    mutable bool m_cancelled = false;
 
-    ProgressCallback m_callback;
-    
-    // Генерация сетки углов
     std::vector<double> generateAlphaGrid() const;
-    
-    // Расчёт углов чередования вспышек
+
+    // Для кинематики это геометрические фазы КВ (cyl_geom_phase_deg / legacy cyl_phase_deg)
     std::vector<double> calculateFiringAngles() const;
-    
-    // Расчёт одного цилиндра (для последовательного режима)
-    void calculateCylinder(int cylinderIndex, 
-                          const std::vector<double>& alpha,
-                          CalculationResults& results) const;
-    
-    // Расчёт одного цилиндра в отдельном потоке (для параллельного режима)
-    static void calculateCylinderThread(int cylinderIndex,
-                                       const EngineParams& params,
-                                       const std::unique_ptr<KSMModel>& model,
-                                       const std::vector<double>& alpha,
-                                       CalculationResults& results,
-                                       std::atomic<int>& completed,
-                                       std::atomic<bool>& cancelled);
+
+    void calculateCylinder(
+        int cylinderIndex,
+        const std::vector<double>& alpha,
+        CalculationResults& results,
+        const std::vector<double>& phaseShifts,
+        std::atomic<bool>* cancelFlag
+    ) const;
 };

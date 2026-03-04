@@ -48,7 +48,7 @@ void VShapedKSMModel::calculate(CylinderResults& results,
     results.side->eps_rod.reserve(n);
     
     for (double a_deg : alpha) {
-        double a_shifted_deg = fmod(a_deg + 2 * phaseShift, 360.0);
+        double a_shifted_deg = normalizeAngleDeg(a_deg + phaseShift);
         double a = a_shifted_deg * DEG_TO_RAD;
         
         // ===== ГЛАВНЫЙ ЦИЛИНДР (как аксиальный) =====

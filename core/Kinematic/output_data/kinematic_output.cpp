@@ -601,91 +601,85 @@ bool KinematicOutput::saveSummary(const CalculationResults &results,
                                   const EngineParams &params,
                                   const string &filename)
 {
-    // Создаем директории если их нет
-    if (!PathManager::ensureDirectoriesExist())
-    {
+    if (!PathManager::ensureDirectoriesExist()) {
         cerr << "Ошибка: не удалось создать рабочие директории" << endl;
         return false;
     }
 
     string outputFilename = filename.empty() ? PathManager::getOutputDirectory() + "/" + generateFilename("ksm_summary") + ".csv" : filename;
 
-    // Используем правильный разделитель путей для текущей ОС
     filesystem::path outputPath(outputFilename);
     outputFilename = outputPath.make_preferred().string();
 
     if (!canWriteToFile(outputFilename))
-    {
         return false;
-    }
 
 #ifdef _WIN32
-    // Для Windows используем широкие символы только для пути
     wstring widePath = PathManager::utf8ToWide(outputFilename);
-    ofstream file(widePath.c_str(), ios::binary); // Используем ofstream и binary mode
+    ofstream file(widePath.c_str(), ios::binary);
 #else
-    ofstream file(outputFilename, ios::binary); // Используем binary mode
+    ofstream file(outputFilename, ios::binary);
 #endif
 
-    if (!file.is_open())
-    {
+    if (!file.is_open()) {
         cerr << "Ошибка создания файла: " << outputFilename << endl;
         return false;
     }
 
-    // ДОБАВЛЕНО: Записываем BOM для UTF-8
-    file << "\xEF\xBB\xBF";
+    file << "\xEF\xBB\xBF"; // UTF-8 BOM
 
     writeHeader(file, params);
     file << "\n";
 
-    bool hasSideCylinder = !results.stroke_full_side.empty();
+    bool hasSideCylinder = !results.cylinder_stroke_full_side.empty();
 
-    // Заголовок для основных параметров
-    if (hasSideCylinder)
-    {
+    // Заголовок
+    if (hasSideCylinder) {
         file << "alpha[град];stroke_full_main[м];velocity_full_main[м/с];acceleration_full_main[м/с²];"
              << "betta_rod_main[рад];omega_rod_main[рад/с];eps_rod_main[рад/с²];"
              << "stroke_full_side[м];velocity_full_side[м/с];acceleration_full_side[м/с²];"
              << "betta_rod_side[рад];omega_rod_side[рад/с];eps_rod_side[рад/с²]\n";
-    }
-    else
-    {
+    } else {
         file << "alpha[град];stroke_full[м];velocity_full[м/с];acceleration_full[м/с²];"
              << "betta_rod[рад];omega_rod[рад/с];eps_rod[рад/с²]\n";
     }
 
-    // Записываем только основные данные
     file << fixed << setprecision(6);
     size_t dataSize = results.alpha.size();
-    for (size_t i = 0; i < dataSize; ++i)
-    {
-        file << results.alpha[i] << ";"
-             << results.stroke_full[i] << ";"
-             << results.velocity_full[i] << ";"
-             << results.acceleration_full[i] << ";"
-             << results.betta_rod[i] << ";"
-             << results.omega_rod[i] << ";"
-             << results.eps_rod[i];
 
-        if (hasSideCylinder)
-        {
-            file << ";" << results.stroke_full_side[i] << ";"
-                 << results.velocity_full_side[i] << ";"
-                 << results.acceleration_full_side[i] << ";"
-                 << results.betta_rod_side[i] << ";"
-                 << results.omega_rod_side[i] << ";"
-                 << results.eps_rod_side[i];
+    for (size_t i = 0; i < dataSize; ++i) {
+        file << results.alpha[i] << ";";
+
+        // Основной цилиндр (индекс 0)
+        if (!results.cylinder_stroke_full.empty() && i < results.cylinder_stroke_full[0].size()) {
+            file << results.cylinder_stroke_full[0][i] << ";"
+                 << results.cylinder_velocity_full[0][i] << ";"
+                 << results.cylinder_acceleration_full[0][i] << ";"
+                 << results.cylinder_betta_rod[0][i] << ";"
+                 << results.cylinder_omega_rod[0][i] << ";"
+                 << results.cylinder_eps_rod[0][i];
+        } else {
+            file << "0.0;0.0;0.0;0.0;0.0;0.0";
+        }
+
+        if (hasSideCylinder) {
+            file << ";";
+            if (!results.cylinder_stroke_full_side.empty() && i < results.cylinder_stroke_full_side[0].size()) {
+                file << results.cylinder_stroke_full_side[0][i] << ";"
+                     << results.cylinder_velocity_full_side[0][i] << ";"
+                     << results.cylinder_acceleration_full_side[0][i] << ";"
+                     << results.cylinder_betta_rod_side[0][i] << ";"
+                     << results.cylinder_omega_rod_side[0][i] << ";"
+                     << results.cylinder_eps_rod_side[0][i];
+            } else {
+                file << "0.0;0.0;0.0;0.0;0.0;0.0";
+            }
         }
         file << "\n";
     }
 
     file.close();
     cout << "Сводные результаты сохранены в файл: " << outputFilename << endl;
-    if (hasSideCylinder)
-    {
-        cout << "Файл содержит данные для главного и бокового цилиндров." << endl;
-    }
     return true;
 }
 

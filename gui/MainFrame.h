@@ -6,16 +6,26 @@
 #include <wx/button.h>
 #include <wx/statline.h>
 #include <wx/checkbox.h>
-#include <wx/checklst.h>          // для wxCheckListBox
+#include <wx/checklst.h>
+#include <wx/grid.h>
+#include <wx/spinctrl.h>
 
 #include "core/common/common_types.h"
-#include "core/Kinematic/Calculations/kinematic_formulas.h"
 #include "core/Kinematic/output_data/kinematic_output.h"
 #include "KinematicPlotPanel.h"
 #include "KinematicTablePanel.h"
 #include "core/Kinematic/Calculations/models/KSMModel.h"
+#include "core/Dynamic/output_data/dynamic_output.h"
+class LayoutPanel;
+class CrankConfigPanel;
 
+// Предварительные объявления классов потоков (определены в .cpp)
+class KinematicThread;
+class DynamicThread;
 
+// Объявления пользовательских событий (определены в .cpp)
+wxDECLARE_EVENT(wxEVT_KINEMATIC_COMPLETE, wxThreadEvent);
+wxDECLARE_EVENT(wxEVT_DYNAMIC_COMPLETE, wxThreadEvent);
 
 class MainFrame : public wxFrame
 {
@@ -26,88 +36,160 @@ private:
     // --- общие данные расчёта ---
     EngineParams       m_lastParams{};          // последние использованные параметры
     CalculationResults m_lastResults{};         // последние результаты расчёта
-    bool               m_hasResults = false;    // флаг наличия результатов
-    KSMType            m_currentType = KSMType::Axial; // текущий тип КШМ
+    bool               m_hasResults = false;        // есть результаты кинематики
+    bool               m_hasDynamicResults = false; // есть результаты динамики
+    KSMType            m_currentType = KSMType::Axial;
+    // Порядок работы / фазы цилиндров (задаются через диалог)
+    std::vector<double> m_customCylPhasesDeg; // size = countCyl, или пусто
+    int m_layoutRows = 1;
+    int m_layoutSections = 1;
 
     // --- левая панель (меню) ---
     wxPanel*  m_sidebarPanel   = nullptr;
-    wxButton* m_btnKinematic   = nullptr;       // кнопка перехода к кинематике
-    wxButton* m_btnDynamic     = nullptr;       // кнопка перехода к динамике (заглушка)
+
+    // Мастер-шаги слева (маршрут использования)
+    wxButton*     m_btnStep1Params   = nullptr;
+    wxStaticText* m_step1Status      = nullptr;
+
+    wxButton*     m_btnStep2Pressure = nullptr;
+    wxStaticText* m_step2Status      = nullptr;
+
+    wxButton*     m_btnStep3Results  = nullptr;
+    wxStaticText* m_step3Status      = nullptr;
 
     // --- правая колонка: книжка разделов ---
-    wxSimplebook* m_rightBook = nullptr;        // 0 - кинематика, 1 - динамика
+    wxSimplebook* m_rightBook = nullptr;
 
     // --- раздел "Кинематика": книжка (ввод / результат) ---
-    wxSimplebook* m_kinematicBook = nullptr;    // 0 - ввод, 1 - результат
+    wxSimplebook* m_kinematicBook = nullptr;
 
     // страница ввода
     wxPanel*     m_kinInputPanel  = nullptr;
-    wxChoice*    m_ksmTypeChoice  = nullptr;    // выбор типа КШМ
+    wxChoice*    m_ksmTypeChoice  = nullptr;
+    wxChoice*    m_CountCylChoice = nullptr;
+    wxChoice*    m_TaktChoice     = nullptr;
+    wxTextCtrl*  m_stepAlphaInput = nullptr;
+    wxTextCtrl*  m_radcrankInput  = nullptr;
+    wxTextCtrl*  m_lambdaInput    = nullptr;
+    wxTextCtrl*  m_nInput         = nullptr;
+    wxStaticText* m_ksmTypeText = nullptr;
 
-    wxChoice*    m_CountCylChoice = nullptr;    // текущий активный выбор количества цилиндров
-    wxChoice*    m_TaktChoice     = nullptr;    // тактность (2 или 4)
-    wxTextCtrl*  m_stepAlphaInput = nullptr;    // шаг угла α
-    wxTextCtrl*  m_endAlphaInput  = nullptr;    // конечный угол α
-    wxTextCtrl*  m_radcrankInput  = nullptr;    // радиус кривошипа r
-    wxTextCtrl*  m_lambdaInput    = nullptr;    // геометрическая характеристика λ
-    wxTextCtrl*  m_nInput         = nullptr;    // частота вращения n
+    wxChoice* m_CountCylChoiceInline;
+    wxChoice* m_CountCylChoiceV;
 
-    // два варианта выбора количества цилиндров (рядные / V-образные)
-    wxChoice* m_CountCylChoiceInline;            // для рядных (1,2,3,4,5,6,8,10,12,16)
-    wxChoice* m_CountCylChoiceV;                 // для V-образных (2,4,6,8,10,12,16)
+    wxStaticText* m_gammaLabel     = nullptr;
+    wxTextCtrl*   m_gammaInput     = nullptr;
+    wxStaticText* m_dezaxLabel     = nullptr;
+    wxTextCtrl*   m_dezaxInput     = nullptr;
+    wxStaticText* m_gammaPricLabel = nullptr;
+    wxTextCtrl*   m_gammaPricInput = nullptr;
+    wxStaticText* m_radcrank1Label = nullptr;
+    wxTextCtrl*   m_radcrank1Input = nullptr;
+    wxStaticText* m_lengthRod1Label = nullptr;
+    wxTextCtrl*   m_lengthRod1Input = nullptr;
 
-    // дополнительные параметры (зависят от типа КШМ)
-    wxStaticText* m_gammaLabel     = nullptr;    // метка "Угол развала γ"
-    wxTextCtrl*   m_gammaInput     = nullptr;    // поле ввода γ
-    wxStaticText* m_dezaxLabel     = nullptr;    // метка "Дезаксиал e"
-    wxTextCtrl*   m_dezaxInput     = nullptr;    // поле ввода e
-    wxStaticText* m_gammaPricLabel = nullptr;    // метка "Угол прицепного шатуна γp"
-    wxTextCtrl*   m_gammaPricInput = nullptr;    // поле ввода γp
-    wxStaticText* m_radcrank1Label = nullptr;    // метка "Радиус кривошипа прицепного r1"
-    wxTextCtrl*   m_radcrank1Input = nullptr;    // поле ввода r1
-    wxStaticText* m_lengthRod1Label = nullptr;   // метка "Длина прицепного шатуна L1"
-    wxTextCtrl*   m_lengthRod1Input = nullptr;   // поле ввода L1
-
-    wxButton*    m_calcButton     = nullptr;     // кнопка "Рассчитать"
+    wxButton*    m_calcButton     = nullptr;
 
     // страница результата
     wxPanel*            m_kinResultPanel       = nullptr;
-    wxStaticText*       m_resultStatus         = nullptr;   // строка статуса после расчёта
-    wxChoice*           m_graphTypeChoice      = nullptr;   // выбор типа графика
-    KinematicPlotPanel* m_plotPanel            = nullptr;   // панель отображения графиков
-    KinematicTablePanel* m_tablePanel          = nullptr;   // панель таблицы данных
-    wxButton*           m_backButton           = nullptr;   // кнопка "Назад" к вводу
-    wxButton*           m_saveCSVButton        = nullptr;   // сохранение в CSV
-    wxButton*           m_saveTXTButton        = nullptr;   // сохранение в TXT
-    wxNotebook*         m_resultBook           = nullptr;   // книжка вкладок (График / Таблица)
+    wxStaticText*       m_resultStatus         = nullptr;
+    wxChoice*           m_graphTypeChoice      = nullptr;
+    KinematicPlotPanel* m_plotPanel            = nullptr;
+    KinematicTablePanel* m_tablePanel          = nullptr;
+    wxButton*           m_backButton           = nullptr;
+    wxButton*           m_saveCSVButton        = nullptr;
+    wxButton*           m_saveTXTButton        = nullptr;
+    wxNotebook*         m_resultBook           = nullptr;
     wxButton* m_resetZoomBtn;
 
-    // --- новые элементы управления графиком (множественный выбор) ---
-    wxCheckListBox* m_cylinderCheckList = nullptr;   // список с флажками для выбора цилиндров/рядов
-    wxCheckBox*     m_showSideCheck     = nullptr;   // чекбокс "Показать боковые цилиндры"
-    wxButton*       m_selectAllBtn      = nullptr;   // кнопка "Выбрать все"
-    wxButton*       m_clearAllBtn       = nullptr;   // кнопка "Очистить всё"
+    wxCheckListBox* m_cylinderCheckList = nullptr;
+    wxButton*       m_selectAllBtn      = nullptr;
+    wxButton*       m_clearAllBtn       = nullptr;
     wxButton* m_saveGraphBtn = nullptr;
 
-    // --- построение интерфейса ---
+    // --- раздел "Динамика" ---
+    wxSimplebook* m_dynamicBook = nullptr;
+    wxPanel* m_dynInputPage = nullptr;
+    wxPanel* m_dynResultPage = nullptr;
+
+    std::vector<double> m_dynPressureAngles;
+    std::vector<double> m_dynPressureValues;
+    wxString m_dynPressureFile;
+
+    wxChoice* m_dynUnitChoice = nullptr ;
+    wxButton* m_dynLoadBtn = nullptr ;
+    wxStaticText* m_dynFileLabel;
+    KinematicPlotPanel* m_dynPreviewPlot;
+    wxButton* m_dynCalcBtn = nullptr;
+
+    wxTextCtrl* m_massPistonInput = nullptr;
+    wxTextCtrl* m_massRodInput = nullptr;
+    wxTextCtrl* m_kRodOscInput = nullptr;
+    wxTextCtrl* m_dynBoreInput = nullptr;
+
+    DynamicResults m_dynResults;
+
+    wxNotebook* m_dynResultBook;
+    wxPanel* m_dynGraphPage = nullptr;
+    wxPanel* m_dynTablePage = nullptr;
+    wxGrid* m_dynGrid;
+    wxChoice* m_dynGraphTypeChoice = nullptr;
+    wxCheckListBox* m_dynCylinderCheckList;
+    KinematicPlotPanel* m_dynPlotResult;
+    wxStaticText* m_dynCalcStatus = nullptr;
+
+    // --- шаблоны и сессии ---
+    wxChoice* m_templateChoice = nullptr;
+    wxButton* m_saveSessionBtn = nullptr;
+    wxButton* m_loadSessionBtn = nullptr;
+
+    wxButton* m_sessionMenuBtn = nullptr;     // кинематика: Сессия ▾
+    wxButton* m_exportKinBtn   = nullptr;     // кинематика-результаты: Экспорт ▾
+    wxButton* m_exportDynBtn   = nullptr;     // динамика-результаты: Экспорт ▾
+
+    wxButton* m_goToDynamicBtn = nullptr; // на странице результатов кинематики
+
+    wxStaticText* m_dynLoadStatus = nullptr; // статус: загружено/ошибка/точек/диапазон
+
+    LayoutPanel* m_layoutPanelHost = nullptr; // контейнер компоновки на странице ввода
+
+    CrankConfigPanel* m_crankPanel = nullptr;
+
+    wxWindow* m_ignitionPanelHost = nullptr;   // LayoutPanel для углов вспышки на странице давления
+    wxTextCtrl* m_tdcTolInput = nullptr;       // допуск ВМТ, град (1.0 по умолчанию)
+
+    wxPanel* m_dynPressurePage = nullptr;
+wxPanel* m_dynIgnitionPage = nullptr;
+
+wxButton* m_dynNextBtn = nullptr;
+wxButton* m_dynPrevBtn = nullptr;
+
+    // --- методы ---
     void BuildLayout();
     void BuildSidebar(wxPanel* parent);
+    void UpdateSidebarSteps();
     void BuildKinematicPages(wxPanel* parent);
+    void BuildDynamicPages(wxPanel* parent);
+    void BuildDynamicInputPage(wxPanel* parent);
+    void BuildDynamicResultPage(wxPanel* parent);
 
-    void ApplyDarkTheme(wxWindow* w);                // рекурсивное применение тёмной темы
+    void ApplyDarkTheme(wxWindow* w);
+    void UpdateKSMTypeFromChoice();
+    void UpdateParameterVisibility();
+    bool ReadParamsFromUI(EngineParams& outParams, wxString& errorMessage);
+    void UpdateCylinderCheckList();
+    bool ValidateField(wxTextCtrl* field, double minVal, double maxVal,
+                       bool allowZero = false, bool positiveOnly = true);
+    void UpdateCalculateButtonState();
 
-    void UpdateKSMTypeFromChoice();                  // обновить тип КШМ при изменении выбора
-    void UpdateParameterVisibility();                 // показать/скрыть дополнительные параметры
-    bool ReadParamsFromUI(EngineParams& outParams, wxString& errorMessage); // чтение параметров из полей
+    void UpdateDynamicGraph();
+    void UpdateDynamicTable();
+    DynamicExportInfo BuildDynExportInfo() const;
 
-    // --- новые вспомогательные методы ---
-    void UpdateCylinderCheckList();                   // заполнить список цилиндров/рядов после расчёта
-    
-    void OnResetZoom(wxCommandEvent& evt);
-    
     // --- обработчики событий ---
-    void OnSidebarKinematic(wxCommandEvent& evt);
-    void OnSidebarDynamic(wxCommandEvent& evt);
+    void OnSidebarKinematic(wxCommandEvent& evt);      // Шаг 1
+    void OnSidebarStep2Pressure(wxCommandEvent& evt);  // Шаг 2
+    void OnSidebarStep3Results(wxCommandEvent& evt);   // Шаг 3
     void OnKSMTypeChanged(wxCommandEvent& evt);
     void OnCalculate(wxCommandEvent& evt);
     void OnGraphTypeChanged(wxCommandEvent& evt);
@@ -115,80 +197,48 @@ private:
     void OnSaveCsv(wxCommandEvent& evt);
     void OnSaveTxt(wxCommandEvent& evt);
     void OnSaveGraphPNG(wxCommandEvent& evt);
+    void OnResetZoom(wxCommandEvent& evt);
 
-    // --- новые обработчики для управления графиками ---
-    void OnCylinderCheckListChanged(wxCommandEvent& evt);   // изменение отмеченных элементов
-    void OnShowSideChecked(wxCommandEvent& evt);            // изменение чекбокса "Показать боковые"
-    void OnSelectAll(wxCommandEvent& evt);                  // кнопка "Выбрать все"
-    void OnClearAll(wxCommandEvent& evt);                   // кнопка "Очистить всё"
+    void OnCylinderCheckListChanged(wxCommandEvent& evt);
+    void OnSelectAll(wxCommandEvent& evt);
+    void OnClearAll(wxCommandEvent& evt);
 
-    // Валидация конкретного поля
-    bool ValidateField(wxTextCtrl* field, double minVal, double maxVal, 
-                       bool allowZero = false, bool positiveOnly = true);
-    
-    // Проверка всех видимых полей и обновление состояния кнопки "Рассчитать"
-    void UpdateCalculateButtonState();
+    void OnSaveSession(wxCommandEvent& evt);
+    void OnLoadSession(wxCommandEvent& evt);
+    bool SaveSessionToFile(const wxString& filename);
+    bool LoadSessionFromFile(const wxString& filename);
 
-    wxChoice* m_templateChoice;
-    wxButton* m_loadTemplateBtn;
+    void OnLoadPressure(wxCommandEvent& evt);
+    void OnCalculateDynamic(wxCommandEvent& evt);
+    void OnDynGraphTypeChanged(wxCommandEvent& evt);
+    void OnDynamicBackToInput(wxCommandEvent& evt);
+    void OnDynCylinderCheckListChanged(wxCommandEvent& evt);
+    void OnDynSelectAllDynCylinders(wxCommandEvent& evt);
+    void OnDynClearAllDynCylinders(wxCommandEvent& evt);
+    void OnDynSaveCsvWide(wxCommandEvent& evt);
+    void OnDynSaveCsvLong(wxCommandEvent& evt);
+    void OnDynSaveTxt(wxCommandEvent& evt);
+    void OnGoToDynamic(wxCommandEvent& evt);
 
-void OnLoadTemplate(wxCommandEvent& evt);
+    // --- обработчики событий завершения потоков ---
+    void OnKinematicComplete(wxThreadEvent& evt);
+    void OnDynamicComplete(wxThreadEvent& evt);
 
-wxButton* m_saveSessionBtn;
-wxButton* m_loadSessionBtn;
+    void UpdateDynamicControlsState();
 
-void OnSaveSession(wxCommandEvent& evt);
-void OnLoadSession(wxCommandEvent& evt);
+    void OnSessionMenu(wxCommandEvent& evt);
+    void OnExportKinematicMenu(wxCommandEvent& evt);
+    void OnExportDynamicMenu(wxCommandEvent& evt);
 
-// Сериализация
-bool SaveSessionToFile(const wxString& filename);
-bool LoadSessionFromFile(const wxString& filename);
+    void UpdateKSMTypeText();
 
+    void OnDynNext(wxCommandEvent&);
+    void OnDynPrev(wxCommandEvent&);
 
-// Параметры динамики
-std::vector<double> m_dynPressureAngles;
-std::vector<double> m_dynPressureValues;
-wxString m_dynPressureFile;
+    void BuildDynamicPressurePage(wxPanel* parent);
+void BuildDynamicIgnitionPage(wxPanel* parent);
 
-// Элементы управления динамикой
-wxChoice* m_dynUnitChoice;
-wxButton* m_dynLoadBtn;
-wxStaticText* m_dynFileLabel;
-KinematicPlotPanel* m_dynPreviewPlot;
-wxButton* m_dynCalcBtn;
+    bool m_kinCalcInProgress = false;
 
-wxTextCtrl* m_massPistonInput;
-wxTextCtrl* m_massRodInput;
-wxTextCtrl* m_kRodOscInput;
-
-// Методы
-void BuildDynamicPages(wxPanel* parent);
-void OnLoadPressure(wxCommandEvent& evt);
-void OnCalculateDynamic(wxCommandEvent& evt);
-
-DynamicResults m_dynResults;
-
-wxSimplebook* m_dynamicBook;
-wxPanel* m_dynInputPage;
-wxPanel* m_dynResultPage;
-
-void BuildDynamicInputPage(wxPanel* parent);
-void BuildDynamicResultPage(wxPanel* parent);
-
-KinematicPlotPanel* m_dynPlotResult;
-
-wxNotebook* m_dynResultBook;
-wxPanel* m_dynGraphPage;
-wxPanel* m_dynTablePage;
-wxGrid* m_dynGrid;
-wxChoice* m_dynGraphTypeChoice;
-
-void OnDynGraphTypeChanged(wxCommandEvent& evt);
-
-wxTextCtrl* m_dynBoreInput;
-void OnDynamicBackToInput(wxCommandEvent& evt);
-
-
-
-wxDECLARE_EVENT_TABLE();
+    wxDECLARE_EVENT_TABLE();
 };

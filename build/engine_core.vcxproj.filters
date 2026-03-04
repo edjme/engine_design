@@ -25,9 +25,6 @@
     <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\KinematicCalculator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\Calculations\kinematic_formulas.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Kinematic\input_data\kinematic_input.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -37,13 +34,13 @@
     <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Dynamic\Calculations\DynamicCalculator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\Dynamic\output_data\dynamic_output.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\core\common\engine_params_builder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\path_manager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\ind_path_manager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="C:\Users\aleks\Documents\progs\engine_design\ind_Palpha_path_manager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

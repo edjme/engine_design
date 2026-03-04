@@ -21,6 +21,26 @@ public:
         AccelerationSide    // Ускорение бокового цилиндра
     };
 
+    enum class DisplayMode {
+    Kinematic,  // обычный режим с выбором цилиндров из m_results
+    Preview,    // предпросмотр одной кривой (давление и т.п.)
+    Multi       // несколько кривых (динамика, выбор цилиндров)
+};
+
+void SetMultipleCurvesData(const std::vector<double>& x,
+                           const std::vector<std::vector<double>>& y,
+                           const std::vector<wxString>& labels,
+                           const wxString& xLabel,
+                           const wxString& yLabel);
+
+// Новые члены данных
+std::vector<double> m_multiX;
+std::vector<std::vector<double>> m_multiY;
+std::vector<wxString> m_curveLabels;
+wxString m_multiXLabel;
+wxString m_multiYLabel;
+DisplayMode m_displayMode;
+
     KinematicPlotPanel(wxWindow* parent);
     
     // Установка данных для отображения
@@ -46,6 +66,9 @@ public:
     void SetPreviewData(const std::vector<double>& x, const std::vector<double>& y,
                     const wxString& xLabel = wxString::FromUTF8("Угол, град"),
                     const wxString& yBaseLabel = wxString::FromUTF8("Давление"));
+
+    void Clear();
+                    
 
     
     
@@ -84,13 +107,6 @@ private:
     // Обновление полных границ данных
     void UpdateDataBounds();
 
-    // Обработчики мыши
-    void OnMouseWheel(wxMouseEvent& evt);
-    void OnMouseLeftDown(wxMouseEvent& evt);
-    void OnMouseLeftUp(wxMouseEvent& evt);
-    void OnMouseMove(wxMouseEvent& evt);
-    void OnMouseCaptureLost(wxMouseCaptureLostEvent& evt);
-
     // Преобразования координат
     inline double MapX(double x, const wxRect& rect) const;
     inline double MapY(double y, const wxRect& rect) const;
@@ -103,8 +119,15 @@ wxString m_previewYLabel;
 bool m_previewMode;
 wxString m_previewYBaseLabel;
 
-// Приватный метод
 void DrawPreview(wxDC& dc, const wxRect& rect);
+
+void DrawMultiCurves(wxDC& dc, const wxRect& rect);
+
+void DrawAxesCustom(wxDC& dc, const wxRect& rect, const wxString& xLabel, const wxString& yLabel);
+void DrawLegendMulti(wxDC& dc, const wxRect& rect);
+
+
+
     
     wxDECLARE_EVENT_TABLE();
 };

@@ -6,11 +6,6 @@
 
 wxBEGIN_EVENT_TABLE(KinematicPlotPanel, wxPanel)
     EVT_PAINT(KinematicPlotPanel::OnPaint)
-    EVT_MOUSEWHEEL(KinematicPlotPanel::OnMouseWheel)
-    EVT_LEFT_DOWN(KinematicPlotPanel::OnMouseLeftDown)
-    EVT_LEFT_UP(KinematicPlotPanel::OnMouseLeftUp)
-    EVT_MOTION(KinematicPlotPanel::OnMouseMove)
-    EVT_MOUSE_CAPTURE_LOST(KinematicPlotPanel::OnMouseCaptureLost)
 wxEND_EVENT_TABLE()
 
 // Вычисление подходящего шага меток на оси
@@ -56,6 +51,10 @@ KinematicPlotPanel::KinematicPlotPanel(wxWindow* parent)
     m_hasValidData = false;
     m_dragging = false;
     m_previewMode = false;
+
+    m_displayMode = DisplayMode::Kinematic;
+    m_hasValidData = false;
+    m_dragging = false;
 }
 
 void KinematicPlotPanel::SetPreviewData(const std::vector<double>& x, const std::vector<double>& y,
@@ -65,6 +64,7 @@ void KinematicPlotPanel::SetPreviewData(const std::vector<double>& x, const std:
     m_previewY = y;
     m_previewXLabel = xLabel;
     m_previewYBaseLabel = yBaseLabel;
+    m_displayMode = DisplayMode::Preview;
     m_previewMode = true;
     Refresh();
 }
@@ -200,6 +200,8 @@ void KinematicPlotPanel::DrawPreview(wxDC& dc, const wxRect& rect)
         dc.DrawText(label, labelX, py - textSize.GetHeight() / 2);
     }
 
+
+    
     // --- Кривая давления (масштабирование не требуется, т.к. координаты уже в данных) ---
     dc.SetPen(wxPen(wxColour(0xFF, 0xAA, 0x00), 2));
     wxPoint prev = MapPoint(m_previewX[0], m_previewY[0], rect);
@@ -223,6 +225,7 @@ void KinematicPlotPanel::DrawPreview(wxDC& dc, const wxRect& rect)
 void KinematicPlotPanel::SetData(const CalculationResults* results)
 {
     m_results = results;
+    m_displayMode = DisplayMode::Kinematic;
     Refresh();
 }
 
@@ -256,41 +259,39 @@ void KinematicPlotPanel::OnPaint(wxPaintEvent& evt)
     wxAutoBufferedPaintDC dc(this);
     dc.Clear();
 
-    
-
     wxSize sz = GetClientSize();
-    if (sz.GetWidth() < 50 || sz.GetHeight() < 50)
-        return;
+    if (sz.GetWidth() < 50 || sz.GetHeight() < 50) return;
 
-    const int marginLeft   = 70;
-    const int marginRight  = 20;
-    const int marginTop    = 20;
-    const int marginBottom = 50;
-
-    wxRect plotRect(
-        marginLeft,
-        marginTop,
-        sz.GetWidth()  - marginLeft - marginRight,
-        sz.GetHeight() - marginTop  - marginBottom
-    );
-
-    if (m_previewMode)
-{
-    DrawPreview(dc, plotRect);
-    return;
-}
+    const int marginLeft = 70, marginRight = 20, marginTop = 20, marginBottom = 50;
+    wxRect plotRect(marginLeft, marginTop,
+                    sz.GetWidth() - marginLeft - marginRight,
+                    sz.GetHeight() - marginTop - marginBottom);
 
     dc.SetTextForeground(wxColour(0xC0, 0xC0, 0xC0));
     dc.SetPen(wxPen(wxColour(0x50, 0x58, 0x60)));
 
-    DrawAxes(dc, plotRect);
-    
-    // Ограничиваем рисование кривых только областью графика
-    dc.SetClippingRegion(plotRect);
-    DrawCurve(dc, plotRect);
-    dc.DestroyClippingRegion();
-    
-    DrawLegend(dc, plotRect);
+    if (m_displayMode == DisplayMode::Kinematic)
+    {
+        // Оси рисуем без клиппинга
+        DrawAxes(dc, plotRect);
+
+        // Кривую обрезаем по рамке графика (иначе при зуме вылезает наружу)
+        dc.SetClippingRegion(plotRect);
+        DrawCurve(dc, plotRect);
+        dc.DestroyClippingRegion();
+
+        // Легенда — тоже без клипа
+        DrawLegend(dc, plotRect);
+    }
+    else if (m_displayMode == DisplayMode::Preview)
+    {
+        
+        DrawPreview(dc, plotRect);
+    }
+    else if (m_displayMode == DisplayMode::Multi)
+    {
+        DrawMultiCurves(dc, plotRect);
+    }
 }
 
 void KinematicPlotPanel::DrawAxes(wxDC& dc, const wxRect& rect)
@@ -436,6 +437,102 @@ if (m_dataMaxX >= m_viewMinX - 1e-6 && m_dataMaxX <= m_viewMaxX + 1e-6)
     dc.SetPen(wxPen(wxColour(0xB0, 0xB8, 0xC0), 2));
     dc.SetBrush(*wxTRANSPARENT_BRUSH);
     dc.DrawRectangle(rect);
+}
+
+void KinematicPlotPanel::DrawAxesCustom(wxDC& dc, const wxRect& rect,
+                                       const wxString& xLabel, const wxString& yLabel)
+{
+    if (!m_hasValidData)
+    {
+        dc.SetPen(wxPen(wxColour(0xB0, 0xB8, 0xC0), 2));
+        dc.SetBrush(*wxTRANSPARENT_BRUSH);
+        dc.DrawRectangle(rect);
+        return;
+    }
+
+    const bool drawXAxisAtZero = (m_viewMinY <= 0.0 && m_viewMaxY >= 0.0);
+    const bool drawYAxisAtZero = (m_viewMinX <= 0.0 && m_viewMaxX >= 0.0);
+
+    const int axisXPos = drawXAxisAtZero ? static_cast<int>(MapY(0.0, rect) + 0.5) : rect.GetBottom();
+    const int axisYPos = drawYAxisAtZero ? static_cast<int>(MapX(0.0, rect) + 0.5) : rect.GetLeft();
+
+    dc.SetPen(wxPen(wxColour(0x80, 0x88, 0x90), 2));
+    dc.DrawLine(rect.GetLeft(), axisXPos, rect.GetRight(), axisXPos);
+    dc.DrawLine(axisYPos, rect.GetTop(), axisYPos, rect.GetBottom());
+
+    dc.SetTextForeground(wxColour(0xC0, 0xC0, 0xC0));
+    dc.DrawText(xLabel, rect.GetLeft() + rect.GetWidth()/2 - 60, rect.GetBottom() + 20);
+
+    dc.DrawRotatedText(yLabel, rect.GetLeft() - 70, rect.GetTop() + rect.GetHeight()/2, 90);
+
+    // Метки X (45°) — оставляем как в DrawAxes
+    const double xTickStep = 45.0;
+    double xStart = ceil(m_viewMinX / xTickStep) * xTickStep;
+
+    for (double x = xStart; x <= m_viewMaxX + 1e-6; x += xTickStep)
+    {
+        int px = static_cast<int>(MapX(x, rect) + 0.5);
+        if (px < rect.GetLeft() || px > rect.GetRight()) continue;
+
+        dc.SetPen(wxPen(wxColour(0x80, 0x88, 0x90)));
+        dc.DrawLine(px, axisXPos - 4, px, axisXPos + 4);
+
+        wxString label = wxString::Format("%.0f", x);
+        wxSize ts = dc.GetTextExtent(label);
+        dc.SetTextForeground(wxColour(0xE0, 0xE0, 0xE0));
+        const int labelY = (axisXPos == rect.GetBottom()) ? axisXPos + 5 : axisXPos - ts.GetHeight() - 5;
+        dc.DrawText(label, px - ts.GetWidth()/2, labelY);
+    }
+
+    // Метки Y (как в DrawAxes)
+    const double yTickStep = niceTickStep(m_viewMaxY - m_viewMinY, 8);
+    double yStart = ceil(m_viewMinY / yTickStep) * yTickStep;
+
+    for (double y = yStart; y <= m_viewMaxY + 1e-6; y += yTickStep)
+    {
+        int py = static_cast<int>(MapY(y, rect) + 0.5);
+        if (py < rect.GetTop() || py > rect.GetBottom()) continue;
+
+        dc.SetPen(wxPen(wxColour(0x80, 0x88, 0x90)));
+        dc.DrawLine(axisYPos - 4, py, axisYPos + 4, py);
+
+        wxString label = (yTickStep >= 0.1) ? wxString::Format("%.2f", y) : wxString::Format("%.3f", y);
+        wxSize ts = dc.GetTextExtent(label);
+        dc.SetTextForeground(wxColour(0xE0, 0xE0, 0xE0));
+        const int labelX = (axisYPos == rect.GetLeft()) ? axisYPos - ts.GetWidth() - 8 : axisYPos + 8;
+        dc.DrawText(label, labelX, py - ts.GetHeight()/2);
+    }
+}
+
+void KinematicPlotPanel::DrawLegendMulti(wxDC& dc, const wxRect& rect)
+{
+    if (m_curveLabels.empty()) return;
+
+    const int numItems = (int)m_curveLabels.size();
+    const int legendWidth = 180;
+    const int legendHeight = numItems * 20 + 30;
+    const int legendX = rect.GetRight() - legendWidth - 10;
+    const int legendY = rect.GetTop() + 10;
+
+    dc.SetBrush(wxBrush(wxColour(0x30, 0x35, 0x3B, 200)));
+    dc.SetPen(wxPen(wxColour(0x50, 0x58, 0x60)));
+    dc.DrawRectangle(legendX, legendY, legendWidth, legendHeight);
+
+    dc.SetTextForeground(wxColour(0xE0, 0xE0, 0xE0));
+    dc.DrawText(wxString::FromUTF8("Выбранные цилиндры:"), legendX + 5, legendY + 5);
+
+    int yPos = legendY + 25;
+    for (int i = 0; i < numItems; ++i)
+    {
+        wxColour color = m_cylinderColors[i % m_cylinderColors.size()];
+
+        dc.SetBrush(wxBrush(color));
+        dc.SetPen(wxPen(color));
+        dc.DrawRectangle(legendX + 10, yPos, 10, 10);
+
+        dc.DrawText(m_curveLabels[i], legendX + 25, yPos - 3);
+        yPos += 20;
+    }
 }
 
 bool KinematicPlotPanel::SaveAsPNG(const wxString& filename) {
@@ -789,117 +886,118 @@ wxPoint KinematicPlotPanel::MapPoint(double x, double y, const wxRect& rect) con
                    static_cast<int>(MapY(y, rect) + 0.5));
 }
 
-// Обработчики мыши
-void KinematicPlotPanel::OnMouseWheel(wxMouseEvent& evt)
+
+
+
+void KinematicPlotPanel::SetMultipleCurvesData(const std::vector<double>& x,
+                                               const std::vector<std::vector<double>>& y,
+                                               const std::vector<wxString>& labels,
+                                               const wxString& xLabel,
+                                               const wxString& yLabel)
 {
-    if (!m_hasValidData) {
-        evt.Skip();
-        return;
+    m_multiX = x;
+    m_multiY = y;
+    m_curveLabels = labels;
+    m_multiXLabel = xLabel;
+    m_multiYLabel = yLabel;
+    m_displayMode = DisplayMode::Multi;
+
+    // Обновляем границы данных для масштабирования
+    if (!x.empty() && !y.empty())
+    {
+        m_dataMinX = *std::min_element(x.begin(), x.end());
+        m_dataMaxX = *std::max_element(x.begin(), x.end());
+
+        double minY = std::numeric_limits<double>::max();
+        double maxY = std::numeric_limits<double>::lowest();
+        for (const auto& vec : y)
+        {
+            if (vec.empty()) continue;
+            auto minmax = std::minmax_element(vec.begin(), vec.end());
+            minY = std::min(minY, *minmax.first);
+            maxY = std::max(maxY, *minmax.second);
+        }
+        if (std::abs(maxY - minY) < 1e-12)
+        {
+            maxY += 1.0;
+            minY -= 1.0;
+        }
+        double yRange = maxY - minY;
+        maxY += yRange * 0.05;
+        m_dataMinY = minY;
+        m_dataMaxY = maxY;
+        m_hasValidData = true;
+    }
+    else
+    {
+        m_hasValidData = false;
     }
 
-    wxRect plotRect = GetPlotRect();
-    wxPoint mousePos = evt.GetPosition();
-    if (!plotRect.Contains(mousePos)) {
-        evt.Skip();
-        return;
+    ResetView();
+}
+
+void KinematicPlotPanel::DrawMultiCurves(wxDC& dc, const wxRect& rect)
+{
+    if (!m_hasValidData || m_multiX.empty() || m_multiY.empty()) return;
+
+    // 1) Оси + подписи для Multi-режима
+    DrawAxesCustom(dc, rect, m_multiXLabel, m_multiYLabel);
+
+    // 2) Кривые
+    dc.SetClippingRegion(rect);
+    for (size_t i = 0; i < m_multiY.size(); ++i)
+    {
+        if (m_multiY[i].size() != m_multiX.size()) continue;
+
+        wxColour color = m_cylinderColors[i % m_cylinderColors.size()];
+        dc.SetPen(wxPen(color, 2));
+
+        wxPoint prev = MapPoint(m_multiX[0], m_multiY[i][0], rect);
+        for (size_t j = 1; j < m_multiX.size(); ++j)
+        {
+            wxPoint cur = MapPoint(m_multiX[j], m_multiY[i][j], rect);
+            dc.DrawLine(prev, cur);
+            prev = cur;
+        }
     }
+    dc.DestroyClippingRegion();
 
-    double dataX = m_viewMinX + (mousePos.x - plotRect.GetLeft()) * (m_viewMaxX - m_viewMinX) / plotRect.GetWidth();
-    double dataY = m_viewMaxY - (mousePos.y - plotRect.GetTop()) * (m_viewMaxY - m_viewMinY) / plotRect.GetHeight();
+    // 3) Легенда
+    DrawLegendMulti(dc, rect);
 
-    double zoomFactor = 1.1;
-    if (evt.GetWheelRotation() < 0)
-        zoomFactor = 1.0 / zoomFactor;
+    // 4) Рамка
+    dc.SetPen(wxPen(wxColour(0xB0, 0xB8, 0xC0), 2));
+    dc.SetBrush(*wxTRANSPARENT_BRUSH);
+    dc.DrawRectangle(rect);
+}
 
-    double newWidth = (m_viewMaxX - m_viewMinX) * zoomFactor;
-    double newHeight = (m_viewMaxY - m_viewMinY) * zoomFactor;
+void KinematicPlotPanel::Clear()
+{
+    // Сбрасываем режимы и данные
+    m_displayMode = DisplayMode::Kinematic;
+    m_hasValidData = false;
 
-    double newMinX = dataX - (dataX - m_viewMinX) * zoomFactor;
-    double newMaxX = newMinX + newWidth;
-    double newMinY = dataY - (dataY - m_viewMinY) * zoomFactor;
-    double newMaxY = newMinY + newHeight;
+    // Preview
+    m_previewX.clear();
+    m_previewY.clear();
+    m_previewXLabel.clear();
+    m_previewYLabel.clear();
 
-    // Ограничение полными данными с сохранением размера окна
-    if (newMinX < m_dataMinX) { newMinX = m_dataMinX; newMaxX = newMinX + newWidth; }
-    if (newMaxX > m_dataMaxX) { newMaxX = m_dataMaxX; newMinX = newMaxX - newWidth; }
-    if (newMinY < m_dataMinY) { newMinY = m_dataMinY; newMaxY = newMinY + newHeight; }
-    if (newMaxY > m_dataMaxY) { newMaxY = m_dataMaxY; newMinY = newMaxY - newHeight; }
+    // Multi
+    m_multiX.clear();
+    m_multiY.clear();
+    m_multiXLabel.clear();
+    m_multiYLabel.clear();
+    m_curveLabels.clear();
 
-    m_viewMinX = newMinX;
-    m_viewMaxX = newMaxX;
-    m_viewMinY = newMinY;
-    m_viewMaxY = newMaxY;
+    // Ссылки на кинематику (на всякий)
+    m_results = nullptr;
+    m_params = nullptr;
+
+    // View
+    m_viewMinX = 0.0; m_viewMaxX = 1.0;
+    m_viewMinY = 0.0; m_viewMaxY = 1.0;
 
     Refresh();
 }
 
-void KinematicPlotPanel::OnMouseLeftDown(wxMouseEvent& evt)
-{
-    if (!m_hasValidData) {
-        evt.Skip();
-        return;
-    }
-
-    if (evt.ControlDown()) {
-        m_dragging = true;
-        m_dragLastPos = evt.GetPosition();
-        m_dragStartMinX = m_viewMinX;
-        m_dragStartMaxX = m_viewMaxX;
-        m_dragStartMinY = m_viewMinY;
-        m_dragStartMaxY = m_viewMaxY;
-        CaptureMouse();
-    } else {
-        evt.Skip();
-    }
-}
-
-void KinematicPlotPanel::OnMouseLeftUp(wxMouseEvent& evt)
-{
-    if (m_dragging) {
-        m_dragging = false;
-        ReleaseMouse();
-    } else {
-        evt.Skip();
-    }
-}
-
-void KinematicPlotPanel::OnMouseMove(wxMouseEvent& evt)
-{
-    if (m_dragging && evt.LeftIsDown() && evt.ControlDown()) {
-        wxPoint currentPos = evt.GetPosition();
-        wxPoint delta = currentPos - m_dragLastPos;
-
-        wxRect plotRect = GetPlotRect();
-        if (plotRect.width == 0) return;
-
-        double dx = -delta.x * (m_viewMaxX - m_viewMinX) / plotRect.width;
-        double dy = delta.y * (m_viewMaxY - m_viewMinY) / plotRect.height;
-
-        double newMinX = m_dragStartMinX + dx;
-        double newMaxX = m_dragStartMaxX + dx;
-        double newMinY = m_dragStartMinY + dy;
-        double newMaxY = m_dragStartMaxY + dy;
-
-        double width = m_viewMaxX - m_viewMinX;
-        double height = m_viewMaxY - m_viewMinY;
-
-        if (newMinX < m_dataMinX) { newMinX = m_dataMinX; newMaxX = newMinX + width; }
-        if (newMaxX > m_dataMaxX) { newMaxX = m_dataMaxX; newMinX = newMaxX - width; }
-        if (newMinY < m_dataMinY) { newMinY = m_dataMinY; newMaxY = newMinY + height; }
-        if (newMaxY > m_dataMaxY) { newMaxY = m_dataMaxY; newMinY = newMaxY - height; }
-
-        m_viewMinX = newMinX;
-        m_viewMaxX = newMaxX;
-        m_viewMinY = newMinY;
-        m_viewMaxY = newMaxY;
-
-        Refresh();
-    } else {
-        evt.Skip();
-    }
-}
-
-void KinematicPlotPanel::OnMouseCaptureLost(wxMouseCaptureLostEvent& evt)
-{
-    m_dragging = false;
-}

@@ -22,7 +22,7 @@ void DeaxialKSMModel::calculate(CylinderResults& results,
     // ... резервирование памяти как в AxialKSMModel ...
     
     for (double a_deg : alpha) {
-        double a_shifted_deg = fmod(a_deg + phaseShift, 360.0);
+        double a_shifted_deg = normalizeAngleDeg(a_deg + phaseShift);
         double a = a_shifted_deg * DEG_TO_RAD;
         double s_a = std::sin(a);
         double c_a = std::cos(a);

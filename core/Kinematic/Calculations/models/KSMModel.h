@@ -2,6 +2,7 @@
 #include "common/common_types.h"
 #include <memory>
 #include <vector>
+#include <cmath>
 
 // Перечисление типов КШМ (дублируем из MainFrame.h для независимости)
 enum class KSMType {
@@ -117,4 +118,15 @@ protected:
     // Вспомогательные функции для производных классов
     double deg2rad(double deg) const { return deg * DEG_TO_RAD; }
     double rad2deg(double rad) const { return rad * RAD_TO_DEG; }
+
+    // Нормализация угла по циклу (360/720) с корректной обработкой отрицательных значений
+double normalizeAngleDeg(double deg) const {
+    const double cycle = (m_params.end_alpha > 0.0)
+        ? m_params.end_alpha
+        : ((m_params.taktnost == 2) ? 360.0 : 720.0);
+
+    double x = std::fmod(deg, cycle);
+    if (x < 0.0) x += cycle;
+    return x;
+}
 };
